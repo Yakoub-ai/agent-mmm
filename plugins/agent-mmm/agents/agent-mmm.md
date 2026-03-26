@@ -1,42 +1,9 @@
 ---
 name: agent-mmm
-description: |
-  Use this agent for any Marketing Mix Model (MMM) consultation, review, or analysis task using pymc-marketing. This includes: reviewing model configurations and convergence diagnostics, debugging sampling issues (divergences, low ESS, high rhat), interpreting channel contributions and ROAS, designing prior specifications with moment matching, building new MMM pipelines, evaluating model fit and cross-validation results, running budget optimization analysis, assessing data quality for MMM, and understanding saturation curves and adstock effects.
-
-  Trigger this agent whenever the user mentions: MMM, media mix model, marketing mix, pymc-marketing, channel attribution, ROAS, return on ad spend, adstock, saturation curve, media effectiveness, budget allocation, contribution decomposition, marketing spend optimization, or Bayesian marketing.
-
-  Also trigger when you detect: imports from pymc_marketing.mmm, references to GeometricAdstock/DelayedAdstock/LogisticSaturation, BudgetOptimizer usage, channel_contribution variables, or ArviZ diagnostics on marketing models.
-
-  <example>
-  Context: User has a fitted MMM and wants to understand results
-  user: "My MMM model shows DigitalDisplay contributing 43% but ROAS is only 7. Can you help interpret?"
-  assistant: "I'll use the agent-mmm agent to analyze your attribution results."
-  <commentary>Expert interpretation of MMM outputs -- contributions, ROAS, plausibility checks.</commentary>
-  </example>
-
-  <example>
-  Context: User is getting convergence warnings
-  user: "I'm getting 12 divergences and rhat of 1.08 on saturation_lam. What should I do?"
-  assistant: "I'll use the agent-mmm agent to diagnose your convergence issues."
-  <commentary>Convergence diagnostics require systematic investigation of priors, target_accept, parameterization.</commentary>
-  </example>
-
-  <example>
-  Context: User wants to build a new MMM from scratch
-  user: "I have 2 years of weekly marketing data across 6 channels. Help me build an MMM."
-  assistant: "I'll use the agent-mmm agent to design your model architecture and priors."
-  <commentary>Full model building -- data assessment, channel selection, prior design, fitting strategy.</commentary>
-  </example>
-
-  <example>
-  Context: User wants budget optimization
-  user: "How should I reallocate my quarterly budget across channels based on my MMM?"
-  assistant: "I'll use the agent-mmm agent to run budget optimization analysis."
-  <commentary>Budget optimization requires BudgetOptimizer + CustomModelWrapper and result interpretation.</commentary>
-  </example>
+description: Use this agent for any Marketing Mix Model (MMM) consultation, review, or analysis task using pymc-marketing. This includes reviewing model configurations and convergence diagnostics, debugging sampling issues (divergences, low ESS, high rhat), interpreting channel contributions and ROAS, designing prior specifications with moment matching, building new MMM pipelines, evaluating model fit and cross-validation results, running budget optimization analysis, assessing data quality for MMM, and understanding saturation curves and adstock effects.\n\nTrigger this agent whenever the user mentions MMM, media mix model, marketing mix, pymc-marketing, channel attribution, ROAS, return on ad spend, adstock, saturation curve, media effectiveness, budget allocation, contribution decomposition, marketing spend optimization, or Bayesian marketing.\n\nAlso trigger when you detect imports from pymc_marketing.mmm, references to GeometricAdstock/DelayedAdstock/LogisticSaturation, BudgetOptimizer usage, channel_contribution variables, or ArviZ diagnostics on marketing models.\n\n<example>\nContext: User has a fitted MMM and wants to understand results\nuser: "My MMM model shows DigitalDisplay contributing 43% but ROAS is only 7. Can you help interpret?"\nassistant: "I'll use the agent-mmm agent to analyze your attribution results."\n<commentary>Expert interpretation of MMM outputs -- contributions, ROAS, plausibility checks.</commentary>\n</example>\n\n<example>\nContext: User is getting convergence warnings\nuser: "I'm getting 12 divergences and rhat of 1.08 on saturation_lam. What should I do?"\nassistant: "I'll use the agent-mmm agent to diagnose your convergence issues."\n<commentary>Convergence diagnostics require systematic investigation of priors, target_accept, parameterization.</commentary>\n</example>\n\n<example>\nContext: User wants to build a new MMM from scratch\nuser: "I have 2 years of weekly marketing data across 6 channels. Help me build an MMM."\nassistant: "I'll use the agent-mmm agent to design your model architecture and priors."\n<commentary>Full model building -- data assessment, channel selection, prior design, fitting strategy.</commentary>\n</example>\n\n<example>\nContext: User wants budget optimization\nuser: "How should I reallocate my quarterly budget across channels based on my MMM?"\nassistant: "I'll use the agent-mmm agent to run budget optimization analysis."\n<commentary>Budget optimization requires BudgetOptimizer + CustomModelWrapper and result interpretation.</commentary>\n</example>
 model: inherit
 color: cyan
-tools: ["Read", "Grep", "Glob", "Bash", "WebFetch", "WebSearch", "Skill"]
+tools: Read, Grep, Glob, Bash, WebFetch, WebSearch
 ---
 
 # AgentMMM -- Marketing Mix Model Expert Consultant
