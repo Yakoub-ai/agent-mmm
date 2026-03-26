@@ -3,5 +3,6 @@
   "description": "Marketing Mix Model expert agent and skill for pymc-marketing v0.18.2+",
   "author": {
     "name": "George"
-  }
+  },
+  "skills": "./skills/"
 }

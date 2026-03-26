@@ -15,82 +15,35 @@ A Claude Code plugin providing an expert MMM agent and specialized skills for bu
 
 ## Installation
 
-This plugin is distributed as a **custom marketplace**. Follow these steps:
+### Method 1 — Interactive (recommended)
 
-### Step 1: Clone the marketplace
+1. Open Claude Code and type `/plugins`
+2. Go to the **Marketplaces** tab → **+ Add Marketplace**
+3. Enter the repo URL: `https://github.com/Yakoub-ai/agent-mmm`
+4. Go to the **Discover** tab → find **agent-mmm** → select **Install for you (user scope)**
+5. Restart Claude Code
 
-```bash
-git clone https://github.com/Yakoub-ai/agent-mmm.git ~/.claude/plugins/marketplaces/yakoub-ai-plugins
-```
+### Method 2 — Project-level (for teams)
 
-### Step 2: Register the marketplace
-
-Add this to `~/.claude/plugins/known_marketplaces.json` (create the file if it doesn't exist):
-
-```json
-{
-  "yakoub-ai-plugins": {
-    "source": {
-      "source": "github",
-      "repo": "Yakoub-ai/agent-mmm"
-    },
-    "installLocation": "~/.claude/plugins/marketplaces/yakoub-ai-plugins",
-    "lastUpdated": "2026-03-26T00:00:00.000Z"
-  }
-}
-```
-
-> If the file already exists with other marketplaces, merge the `yakoub-ai-plugins` entry into the existing JSON object.
-
-### Step 3: Create the plugin cache
-
-```bash
-mkdir -p ~/.claude/plugins/cache/yakoub-ai-plugins/agent-mmm/unknown
-cp -r ~/.claude/plugins/marketplaces/yakoub-ai-plugins/plugins/agent-mmm/* \
-      ~/.claude/plugins/cache/yakoub-ai-plugins/agent-mmm/unknown/
-mkdir -p ~/.claude/plugins/cache/yakoub-ai-plugins/agent-mmm/unknown/.claude-plugin
-cat > ~/.claude/plugins/cache/yakoub-ai-plugins/agent-mmm/unknown/.claude-plugin/plugin.json << 'EOF'
-{
-  "name": "agent-mmm",
-  "description": "Marketing Mix Model expert agent and skill for pymc-marketing v0.18.2+",
-  "author": { "name": "George" }
-}
-EOF
-```
-
-### Step 4: Enable the plugin
-
-Add to the `enabledPlugins` section of `~/.claude/settings.json`:
+Add this to your project's `.claude/settings.json`:
 
 ```json
 {
+  "extraKnownMarketplaces": {
+    "yakoub-ai-plugins": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/Yakoub-ai/agent-mmm"
+      }
+    }
+  },
   "enabledPlugins": {
     "agent-mmm@yakoub-ai-plugins": true
   }
 }
 ```
 
-### Step 5: Register in installed_plugins.json
-
-Add this entry inside the `"plugins"` object in `~/.claude/plugins/installed_plugins.json`:
-
-```json
-"agent-mmm@yakoub-ai-plugins": [
-  {
-    "scope": "user",
-    "installPath": "~/.claude/plugins/cache/yakoub-ai-plugins/agent-mmm/unknown",
-    "version": "unknown",
-    "installedAt": "2026-03-26T00:00:00.000Z",
-    "lastUpdated": "2026-03-26T00:00:00.000Z"
-  }
-]
-```
-
-> Replace `~` with your actual home directory path (e.g., `/home/youruser` or `/Users/youruser`).
-
-### Step 6: Activate
-
-Restart Claude Code or run `/reload-plugins`. You should see the plugin count increase by 1.
+Teammates will be prompted to install the plugin when they open the project in Claude Code.
 
 ## Usage
 
