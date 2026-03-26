@@ -15,51 +15,88 @@ A Claude Code plugin providing an expert MMM agent and specialized skills for bu
 
 ## Installation
 
-### Step 1: Clone
+This plugin is distributed as a **custom marketplace**. Follow these steps:
+
+### Step 1: Clone the marketplace
 
 ```bash
-git clone https://github.com/yakoub-ai/agent-mmm.git ~/.claude/plugins/agent-mmm
+git clone https://github.com/Yakoub-ai/agent-mmm.git ~/.claude/plugins/marketplaces/yakoub-ai-plugins
 ```
 
-### Step 2: Enable in settings.json
+### Step 2: Register the marketplace
 
-Add `"agent-mmm": true` to the `enabledPlugins` section of `~/.claude/settings.json`:
+Add this to `~/.claude/plugins/known_marketplaces.json` (create the file if it doesn't exist):
 
 ```json
 {
-  "enabledPlugins": {
-    "agent-mmm": true
+  "yakoub-ai-plugins": {
+    "source": {
+      "source": "github",
+      "repo": "Yakoub-ai/agent-mmm"
+    },
+    "installLocation": "~/.claude/plugins/marketplaces/yakoub-ai-plugins",
+    "lastUpdated": "2026-03-26T00:00:00.000Z"
   }
 }
 ```
 
-### Step 3: Register in installed_plugins.json
+> If the file already exists with other marketplaces, merge the `yakoub-ai-plugins` entry into the existing JSON object.
 
-Add this entry to `~/.claude/plugins/installed_plugins.json` inside the `"plugins"` object:
+### Step 3: Create the plugin cache
+
+```bash
+mkdir -p ~/.claude/plugins/cache/yakoub-ai-plugins/agent-mmm/unknown
+cp -r ~/.claude/plugins/marketplaces/yakoub-ai-plugins/plugins/agent-mmm/* \
+      ~/.claude/plugins/cache/yakoub-ai-plugins/agent-mmm/unknown/
+mkdir -p ~/.claude/plugins/cache/yakoub-ai-plugins/agent-mmm/unknown/.claude-plugin
+cat > ~/.claude/plugins/cache/yakoub-ai-plugins/agent-mmm/unknown/.claude-plugin/plugin.json << 'EOF'
+{
+  "name": "agent-mmm",
+  "description": "Marketing Mix Model expert agent and skill for pymc-marketing v0.18.2+",
+  "author": { "name": "George" }
+}
+EOF
+```
+
+### Step 4: Enable the plugin
+
+Add to the `enabledPlugins` section of `~/.claude/settings.json`:
 
 ```json
-"agent-mmm": [
+{
+  "enabledPlugins": {
+    "agent-mmm@yakoub-ai-plugins": true
+  }
+}
+```
+
+### Step 5: Register in installed_plugins.json
+
+Add this entry inside the `"plugins"` object in `~/.claude/plugins/installed_plugins.json`:
+
+```json
+"agent-mmm@yakoub-ai-plugins": [
   {
     "scope": "user",
-    "installPath": "/home/YOUR_USER/.claude/plugins/agent-mmm",
-    "version": "1.0.0",
+    "installPath": "~/.claude/plugins/cache/yakoub-ai-plugins/agent-mmm/unknown",
+    "version": "unknown",
     "installedAt": "2026-03-26T00:00:00.000Z",
     "lastUpdated": "2026-03-26T00:00:00.000Z"
   }
 ]
 ```
 
-Replace `/home/YOUR_USER/` with your actual home directory path.
+> Replace `~` with your actual home directory path (e.g., `/home/youruser` or `/Users/youruser`).
 
-### Step 4: Activate
+### Step 6: Activate
 
-Restart Claude Code or run `/reload-plugins`.
+Restart Claude Code or run `/reload-plugins`. You should see the plugin count increase by 1.
 
 ## Usage
 
 ### Agent (Deep Consultation)
 
-The agent is automatically dispatched when you discuss MMM topics, or you can reference it directly:
+The agent is automatically dispatched when you discuss MMM topics:
 
 - "Review my MMM model convergence diagnostics"
 - "Help me build an MMM with pymc-marketing for 6 channels"
@@ -73,7 +110,7 @@ Skills activate automatically when relevant context is detected (e.g., working w
 
 ## Architecture
 
-The agent has core MMM knowledge embedded (imports, scaling rules, common pitfalls) and loads specialized skills on-demand based on the task. Multiple skills can be loaded in parallel for tasks spanning multiple areas (e.g., model review needs diagnostics + attribution).
+The agent has core MMM knowledge embedded (imports, scaling rules, common pitfalls) and loads specialized skills on-demand based on the task. Multiple skills can be loaded in parallel for tasks spanning multiple areas.
 
 ```
 agent-mmm (core routing + pitfalls)
@@ -84,6 +121,16 @@ agent-mmm (core routing + pitfalls)
   ├── mmm-budget-optimization (budget optimizer, sensitivity)
   └── mmm-api-reference       (full API signatures & methods)
 ```
+
+## Compatibility
+
+This plugin is **Claude Code only**. It uses Claude Code's plugin system (agents, skills, YAML frontmatter) which is not compatible with:
+
+- **GitHub Copilot** -- Uses a different extension system (VS Code extensions / Copilot Extensions API)
+- **Cursor** -- Uses its own rules/context system
+- **Other AI coding tools** -- Each has its own plugin format
+
+However, the knowledge content (markdown files in `skills/`) can be manually adapted as context files for other tools.
 
 ## Grounded In
 
