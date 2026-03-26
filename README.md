@@ -15,29 +15,45 @@ A Claude Code plugin providing an expert MMM agent and specialized skills for bu
 
 ## Installation
 
-### Option 1: Clone to plugins directory
+### Step 1: Clone
 
 ```bash
 git clone https://github.com/yakoub-ai/agent-mmm.git ~/.claude/plugins/agent-mmm
 ```
 
-Then add to `~/.claude/plugins/installed_plugins.json`:
+### Step 2: Enable in settings.json
+
+Add `"agent-mmm": true` to the `enabledPlugins` section of `~/.claude/settings.json`:
 
 ```json
 {
-  "agent-mmm": [{
-    "scope": "user",
-    "installPath": "~/.claude/plugins/agent-mmm",
-    "version": "1.0.0"
-  }]
+  "enabledPlugins": {
+    "agent-mmm": true
+  }
 }
 ```
 
+### Step 3: Register in installed_plugins.json
+
+Add this entry to `~/.claude/plugins/installed_plugins.json` inside the `"plugins"` object:
+
+```json
+"agent-mmm": [
+  {
+    "scope": "user",
+    "installPath": "/home/YOUR_USER/.claude/plugins/agent-mmm",
+    "version": "1.0.0",
+    "installedAt": "2026-03-26T00:00:00.000Z",
+    "lastUpdated": "2026-03-26T00:00:00.000Z"
+  }
+]
+```
+
+Replace `/home/YOUR_USER/` with your actual home directory path.
+
+### Step 4: Activate
+
 Restart Claude Code or run `/reload-plugins`.
-
-### Option 2: Manual
-
-Copy the plugin directory to `~/.claude/plugins/agent-mmm/` and register as above.
 
 ## Usage
 

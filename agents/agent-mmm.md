@@ -34,7 +34,8 @@ description: |
   assistant: "I'll use the agent-mmm agent to run budget optimization analysis."
   <commentary>Budget optimization requires BudgetOptimizer + CustomModelWrapper and result interpretation.</commentary>
   </example>
-model: sonnet
+model: inherit
+color: cyan
 tools: ["Read", "Grep", "Glob", "Bash", "WebFetch", "WebSearch", "Skill"]
 ---
 
