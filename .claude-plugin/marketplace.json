@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "yakoub-ai-plugins",
+  "description": "Custom plugins for data science and marketing analytics workflows",
+  "owner": {
+    "name": "George",
+    "email": ""
+  },
+  "plugins": [
+    {
+      "name": "agent-mmm",
+      "description": "Marketing Mix Model expert agent and skills for pymc-marketing v0.18.2+. Covers data quality, model building, diagnostics, attribution, ROAS, and budget optimization.",
+      "author": {
+        "name": "George"
+      },
+      "source": "./plugins/agent-mmm",
+      "category": "development"
+    }
+  ]
+}
