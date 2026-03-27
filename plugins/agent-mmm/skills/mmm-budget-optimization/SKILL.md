@@ -6,50 +6,88 @@ description: |
 
 # MMM Budget Optimization
 
-## Setup: BudgetOptimizer + CustomModelWrapper
+## Primary API: MultiDimensionalBudgetOptimizerWrapper (0.19.1+)
 
-The multidimensional MMM does **NOT** have `model.optimize_budget()`. Use the standalone optimizer:
+The multidimensional MMM does **NOT** have `model.optimize_budget()`. Use `MultiDimensionalBudgetOptimizerWrapper`:
+
+```python
+import xarray as xr
+import pandas as pd
+from pymc_marketing.mmm.multidimensional import MultiDimensionalBudgetOptimizerWrapper
+
+# total_media_contribution_original_scale is added automatically during build_model
+# No need to call add_original_scale_contribution_variable() first
+
+start_date = pd.to_datetime(X["date"].min()).strftime("%Y-%m-%d")
+end_date = pd.to_datetime(X["date"].max()).strftime("%Y-%m-%d")
+wrapper = MultiDimensionalBudgetOptimizerWrapper(
+    model=model,
+    start_date=start_date,
+    end_date=end_date,
+)
+
+# Budget bounds as xr.DataArray — dims=["channel", "bound"], bound coords = ["lower", "upper"]
+current_alloc = {ch: float(X[ch].sum()) for ch in channel_columns}
+total_budget = sum(current_alloc.values())
+budget_bounds = xr.DataArray(
+    data=[[v * 0.5, v * 1.5] for v in current_alloc.values()],
+    dims=["channel", "bound"],
+    coords={"channel": list(current_alloc.keys()), "bound": ["lower", "upper"]},
+)
+
+# Optimize
+opt_alloc, opt_result = wrapper.optimize_budget(
+    budget=total_budget,
+    budget_bounds=budget_bounds,
+    # response_variable defaults to "total_media_contribution_original_scale"
+)
+
+# Extract per-channel optimal spend
+for ch in channel_columns:
+    print(f"{ch}: {float(opt_alloc.sel(channel=ch).values):.0f}")
+```
+
+## Bayesian Posterior CIs via sample_response_distribution
+
+```python
+# Compare current vs optimal allocation with posterior uncertainty
+current_alloc_da = xr.DataArray(
+    [float(X[ch].mean()) for ch in channel_columns],  # weekly rates
+    dims=["channel"],
+    coords={"channel": channel_columns},
+)
+optimal_alloc_da = xr.DataArray(
+    [float(opt_alloc.sel(channel=ch).values) / len(X) for ch in channel_columns],
+    dims=["channel"],
+    coords={"channel": channel_columns},
+)
+
+# Returns xr.Dataset with "total_media_contribution_original_scale" and "channel_contribution"
+current_resp = wrapper.sample_response_distribution(current_alloc_da)
+optimal_resp = wrapper.sample_response_distribution(optimal_alloc_da)
+
+# total_media_contribution_original_scale has dim "sample" only (already summed over date)
+current_total = current_resp["total_media_contribution_original_scale"].values.flatten()
+optimal_total = optimal_resp["total_media_contribution_original_scale"].values.flatten()
+uplift = optimal_total - current_total
+
+print(f"Expected uplift: {uplift.mean():.0f} ({np.percentile(uplift, 5):.0f} to {np.percentile(uplift, 95):.0f})")
+print(f"P(positive uplift): {(uplift > 0).mean() * 100:.1f}%")
+```
+
+## Legacy API: BudgetOptimizer (still available, dict bounds)
+
+`BudgetOptimizer.allocate_budget()` still accepts dict bounds for backward compat:
 
 ```python
 from pymc_marketing.mmm.budget_optimizer import BudgetOptimizer, CustomModelWrapper
 
-# Step 1: Wrap the fitted model
-wrapper = CustomModelWrapper(
-    base_model=model.model,    # The PyMC model object (not the MMM wrapper)
-    idata=model.idata,         # InferenceData with posterior
-    channels=channel_columns,  # List of channel column names
-)
-
-# Step 2: Create optimizer
-optimizer = BudgetOptimizer(
-    model=wrapper,
-    num_periods=len(X),        # Number of time periods in the data
-)
-```
-
-## Running Optimization
-
-### Basic Optimization
-```python
-# Calculate current allocation
-current_alloc = {ch: X[ch].sum() for ch in channel_columns}
-total_budget = sum(current_alloc.values())
-
-# Set bounds (e.g., +/- 50% per channel)
-budget_bounds = {
-    ch: (spend * 0.5, spend * 1.5)
-    for ch, spend in current_alloc.items()
-}
-
-# Optimize
+wrapper = CustomModelWrapper(base_model=model.model, idata=model.idata, channels=channel_columns)
+optimizer = BudgetOptimizer(model=wrapper, num_periods=len(X))
 opt_alloc, opt_result = optimizer.allocate_budget(
     total_budget=total_budget,
-    budget_bounds=budget_bounds,
+    budget_bounds={ch: (v * 0.5, v * 1.5) for ch, v in current_alloc.items()},
 )
-
-# Results
-print(f"Optimal allocation: {opt_alloc}")
-print(f"Expected improvement: {opt_result}")
 ```
 
 ### With Custom Constraints
@@ -61,9 +99,9 @@ def tv_min_constraint(x):
     tv_idx = channel_columns.index("spend_TV")
     return x[tv_idx] - 0.20 * total_budget  # >= 0
 
-optimizer.set_constraints([
-    Constraint(type="ineq", fun=tv_min_constraint),
-])
+# For MultiDimensionalBudgetOptimizerWrapper:
+wrapper.optimize_budget(budget=total_budget, budget_bounds=budget_bounds,
+                        constraints=[Constraint(type="ineq", fun=tv_min_constraint)])
 ```
 
 ## Budget Bounds Strategy

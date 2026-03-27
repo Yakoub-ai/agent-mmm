@@ -141,18 +141,24 @@ Lower `nu` = heavier tails = more outlier tolerance. `nu=5` balances robustness 
 
 ### Step 1: Prior Predictive Check
 ```python
-prior = model.sample_prior_predictive(X=X, y=y, samples=500)
+# CRITICAL: y Series name must match target_column (default "y")
+y_series = pd.Series(y, name="y")
+prior = model.sample_prior_predictive(X=X, y=y_series, samples=500)
 # Verify: 90% credible interval contains observed data range
 # If not: priors are too narrow or misspecified
 ```
 
 ### Step 2: Fit Model
 ```python
+# CRITICAL: y Series must be named to match target_column
+# If constructor has target_column="y" (default), rename y before fit
+y_series = pd.Series(y).rename("y")
+
 # Cross-validation runs (lighter sampling)
-model.fit(X_train, y_train, draws=1000, tune=1500, chains=4, target_accept=0.97)
+model.fit(X_train, y_series_train, draws=1000, tune=1500, chains=4, target_accept=0.97)
 
 # Final fit (full sampling)
-model.fit(X, y, draws=2000, tune=3000, chains=4, target_accept=0.99)
+model.fit(X, y_series, draws=2000, tune=3000, chains=4, target_accept=0.99)
 ```
 
 ### Step 3: Posterior Predictive

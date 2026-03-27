@@ -1,10 +1,10 @@
 ---
 name: mmm-api-reference
 description: |
-  Complete pymc-marketing API reference for writing and reviewing MMM code. Use when you need exact constructor signatures, method names, parameter lists, or code patterns for pymc-marketing v0.18.2+. Load this skill when writing new model code, debugging import errors, checking method signatures, or reviewing code that uses pymc-marketing. Also activate when you need to look up plotting methods, evaluation functions, cross-validation setup, or transformation classes.
+  Complete pymc-marketing API reference for writing and reviewing MMM code. Use when you need exact constructor signatures, method names, parameter lists, or code patterns for pymc-marketing v0.19.1+. Load this skill when writing new model code, debugging import errors, checking method signatures, or reviewing code that uses pymc-marketing. Also activate when you need to look up plotting methods, evaluation functions, cross-validation setup, or transformation classes.
 ---
 
-# pymc-marketing MMM API Reference (v0.18.2+)
+# pymc-marketing MMM API Reference (v0.19.1+)
 
 ## 1. Imports
 
@@ -113,29 +113,39 @@ saturation = LogisticSaturation()
 ```python
 # Prior predictive check
 prior = model.sample_prior_predictive(X=X, y=y, samples=500)
+# Returns xr.DataArray (combined=True, single target var)
 
-# Fit model
+# Fit model — sampler kwargs still work as fit() **kwargs in 0.19.1
 model.fit(X, y, draws=2000, tune=3000, chains=4, target_accept=0.99)
+# OR pass via constructor: MMM(..., sampler_config={"draws": 2000, "tune": 3000, ...})
 
 # Posterior predictive (in-sample)
 pp = model.sample_posterior_predictive(X, extend_idata=True)
-# WARNING: Returns NORMALIZED [0,1] values
+# 0.19.1: Returns xr.DataArray with dims (date, sample) [combined=True default]
+# WARNING: Values are NORMALIZED [0,1] — multiply by target_scale for original scale
 
 # Out-of-sample prediction
 pp_test = model.sample_posterior_predictive(X_test, extend_idata=False)
-y_pred = pp_test.mean(dim=("chain", "draw")).values
+# Returns xr.DataArray — average over sample dim:
+y_pred = pp_test.mean(dim="sample").values  # NOT mean(dim=("chain","draw")) anymore
 
 # Get scale factor
-scale = model.get_scales_as_xarray()["target_scale"]
+scale = float(model.get_scales_as_xarray()["target_scale"].values)
 ```
 
 ## 5. Attribution Methods
 
 ```python
-# Channel contributions (original scale)
-model.add_original_scale_contribution_variable(["channel_contribution"])
-contrib = model.idata.posterior["channel_contribution_original_scale"]
+# Channel contributions (original scale) — VERIFIED 0.19.1 pattern
+# channel_contribution IS in idata.posterior (normalized) after fit()
+cc = model.idata.posterior["channel_contribution"]  # dims: (chain, draw, date, channel)
+target_scale = float(model.get_scales_as_xarray()["target_scale"].values)
+contrib = cc * target_scale  # original scale
 # dims: (chain, draw, date, channel)
+
+# NOTE: add_original_scale_contribution_variable() DOES exist but its result
+# goes into model.model.named_vars, NOT into idata.posterior automatically.
+# Use the manual scaling approach above for contribution analysis.
 
 # Model summary
 model.table()           # Rich table
@@ -303,5 +313,13 @@ az.compare({"model_a": idata_a, "model_b": idata_b})
 ## 13. Sensitivity Analysis
 
 ```python
-results = model.sensitivity.run_sweep()
+# run_sweep REQUIRED positional arg: var_input (the pm.Data variable name)
+# For standard MMM models, the channel spend variable is "channel_data"
+model.sensitivity.run_sweep(
+    "channel_data",                          # var_input: REQUIRED positional
+    sweep_values=np.linspace(0, 1.5, 12),   # multipliers to sweep
+    var_names="channel_contribution",        # var_names (plural), default is "channel_contribution"
+    sweep_type="multiplicative",             # "multiplicative", "additive", or "absolute"
+)
+fig = model.plot.sensitivity_analysis()
 ```

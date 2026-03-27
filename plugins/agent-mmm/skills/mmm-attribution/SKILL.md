@@ -8,14 +8,13 @@ description: |
 
 ## Extracting Channel Contributions
 
-### Original Scale Contributions
+### Original Scale Contributions (0.19.1+ verified pattern)
 ```python
-# Step 1: Add contribution variable to posterior
-model.add_original_scale_contribution_variable(["channel_contribution"])
-
-# Step 2: Access from idata
-contrib = model.idata.posterior["channel_contribution_original_scale"]
-# dims: (chain, draw, date, channel)
+# channel_contribution is in idata.posterior in normalized [0,1] scale after fit()
+# Multiply by target_scale to convert to original scale
+cc = model.idata.posterior["channel_contribution"]  # dims: (chain, draw, date, channel)
+target_scale = float(model.get_scales_as_xarray()["target_scale"].values)
+contrib = cc * target_scale  # dims: (chain, draw, date, channel)
 
 # Mean contributions per channel over time
 contrib_mean = contrib.mean(dim=("chain", "draw"))  # (date, channel)
@@ -24,13 +23,30 @@ contrib_mean = contrib.mean(dim=("chain", "draw"))  # (date, channel)
 total_contrib = contrib.mean(dim=("chain", "draw")).sum("date")
 
 # Contribution shares (proportion of each channel)
-shares = contrib / contrib.sum("channel")
-shares_mean = shares.mean(dim=("chain", "draw", "date"))
+shares = total_contrib / total_contrib.sum("channel")
+```
+
+### add_original_scale_contribution_variable — IMPORTANT NOTE
+```python
+# This method EXISTS in 0.19.1 but has a critical caveat:
+# It adds a deterministic to the model graph (model.model.named_vars)
+# but does NOT populate idata.posterior — sampling was already done during fit().
+#
+# The variable only appears in idata.posterior_predictive if you call
+# sample_posterior_predictive() AFTER calling this method.
+#
+# For most use cases, the simpler direct approach above is preferred:
+#   contrib = model.idata.posterior["channel_contribution"] * target_scale
+#
+# Use add_original_scale_contribution_variable only when you specifically
+# need it in the posterior_predictive group for MultiDimensionalBudgetOptimizerWrapper.
+# The optimizer's response_variable "total_media_contribution_original_scale"
+# is already added automatically during build_model — no manual call needed.
 ```
 
 ### NEVER Use Legacy Method
 ```python
-# WRONG (legacy, doesn't exist in multidimensional):
+# WRONG (legacy, doesn't exist in multidimensional 0.19.1):
 # model.compute_channel_contribution_original_scale()
 
 # WRONG (legacy):
