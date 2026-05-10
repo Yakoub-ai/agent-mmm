@@ -1,0 +1,143 @@
+# Controls catalog: industry/category → recommended control variables
+# Each entry has: name, description, source, importance (high/medium/low), applies_to (list of industries or 'all')
+
+calendar:
+  - name: is_christmas_week
+    description: Dummy = 1 for the week of Christmas (Dec 25 ± 1 week)
+    source: generated_from_date
+    importance: high
+    applies_to: [retail, ecommerce, FMCG, CPG, all]
+
+  - name: is_easter_week
+    description: Dummy = 1 for the week of Easter
+    source: generated_from_date
+    importance: medium
+    applies_to: [retail, ecommerce, FMCG, CPG, food, all]
+
+  - name: is_black_friday_week
+    description: Dummy = 1 for the week of Black Friday / Cyber Monday (late November)
+    source: generated_from_date
+    importance: high
+    applies_to: [retail, ecommerce, FMCG, CPG, all]
+
+  - name: is_q4
+    description: Dummy = 1 for Q4 (Oct–Dec) — captures holiday-season baseline lift
+    source: generated_from_date
+    importance: medium
+    applies_to: [all]
+
+  - name: week_of_year
+    description: Integer 1–52 representing the week number (for linear seasonal trend)
+    source: generated_from_date
+    importance: low
+    applies_to: [all]
+
+events:
+  - name: is_covid_lockdown
+    description: Dummy = 1 for weeks with significant COVID restrictions (Mar 2020 – Jun 2021 approximate)
+    source: user_provided_or_generated
+    importance: high
+    applies_to: [all]
+
+  - name: pre_post_brand_relaunch
+    description: Dummy = 1 for weeks after a major brand/product relaunch
+    source: user_provided
+    importance: high
+    applies_to: [all]
+
+macro:
+  - name: consumer_confidence_index
+    description: Monthly consumer confidence (interpolated to weekly). Available from national statistics offices.
+    source: external_api
+    importance: high
+    applies_to: [retail, ecommerce, automotive, financial_services, insurance]
+
+  - name: inflation_rate_yoy
+    description: Year-over-year CPI inflation rate. Affects price sensitivity.
+    source: external_api
+    importance: medium
+    applies_to: [retail, ecommerce, FMCG, CPG, insurance]
+
+  - name: unemployment_rate
+    description: Monthly unemployment rate (interpolated to weekly).
+    source: external_api
+    importance: medium
+    applies_to: [financial_services, insurance, automotive, retail]
+
+  - name: interest_rate
+    description: Central bank policy rate. Affects big-ticket purchases.
+    source: external_api
+    importance: high
+    applies_to: [automotive, financial_services, insurance, real_estate]
+
+search:
+  - name: google_trends_brand
+    description: Google Trends index for the brand name (0–100 weekly). Captures organic interest.
+    source: google_trends
+    importance: high
+    applies_to: [all]
+
+  - name: google_trends_category
+    description: Google Trends index for the product category (e.g. 'car insurance', 'running shoes')
+    source: google_trends
+    importance: medium
+    applies_to: [all]
+
+weather:
+  - name: avg_temperature_c
+    description: Average weekly temperature (Celsius) for the primary market.
+    source: weather_api
+    importance: medium
+    applies_to: [retail, ecommerce, FMCG, utilities, outdoor]
+
+  - name: precipitation_mm
+    description: Weekly precipitation.
+    source: weather_api
+    importance: low
+    applies_to: [outdoor, retail]
+
+industry_specific:
+  insurance:
+    - name: renewal_cycle_indicator
+      description: Dummy = 1 for weeks when a major renewal cycle peaks (e.g. Jan 1, July 1 policy anniversaries)
+      source: user_provided
+      importance: high
+
+    - name: competitor_price_index
+      description: Relative price index vs competitors if available
+      source: user_provided
+      importance: medium
+
+  automotive:
+    - name: new_model_launch_week
+      description: Dummy = 1 for weeks of new model launches (own brand)
+      source: user_provided
+      importance: high
+
+    - name: plate_change_week
+      description: "Dummy = 1 for weeks around number plate change periods (UK: Mar, Sep)"
+      source: generated_from_date
+      importance: high
+      regions: [UK]
+
+  retail:
+    - name: payday_week
+      description: Dummy = 1 for weeks containing the last Friday of the month (payday proxy)
+      source: generated_from_date
+      importance: medium
+
+    - name: summer_sale_indicator
+      description: Dummy = 1 for weeks of major summer sales events
+      source: user_provided
+      importance: medium
+
+  saas:
+    - name: fiscal_year_end_quarter
+      description: Dummy = 1 for Q4 of fiscal year — when B2B budgets get spent
+      source: generated_from_date
+      importance: high
+
+    - name: conference_week
+      description: Dummy = 1 for weeks of major industry conferences
+      source: user_provided
+      importance: medium
