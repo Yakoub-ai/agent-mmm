@@ -1,0 +1,80 @@
+# Prior catalog for MMM channel parameters
+# adstock_alpha: carryover decay [0, 1] — higher = longer memory
+# saturation_lam: steepness of diminishing returns — higher = steeper saturation
+
+channel_priors:
+  sem:
+    alpha_mu: 0.10
+    alpha_sigma: 0.07
+    lam_mu: 4.0
+    lam_sigma: 1.0
+    rationale: "Near-zero carryover (search intent immediate), steep saturation (budget limits reach)"
+
+  social:
+    alpha_mu: 0.20
+    alpha_sigma: 0.10
+    lam_mu: 3.0
+    lam_sigma: 0.8
+    rationale: "Short carryover, moderate saturation — social drives impulse"
+
+  display:
+    alpha_mu: 0.25
+    alpha_sigma: 0.12
+    lam_mu: 3.0
+    lam_sigma: 0.8
+    rationale: "Short carryover, display has awareness effect"
+
+  youtube:
+    alpha_mu: 0.40
+    alpha_sigma: 0.15
+    lam_mu: 2.5
+    lam_sigma: 0.65
+    rationale: "Medium carryover — video content has longer recall"
+
+  meta:
+    alpha_mu: 0.30
+    alpha_sigma: 0.12
+    lam_mu: 3.0
+    lam_sigma: 0.8
+    rationale: "Short-medium carryover; Meta combines social + display characteristics"
+
+  audio:
+    alpha_mu: 0.45
+    alpha_sigma: 0.15
+    lam_mu: 2.0
+    lam_sigma: 0.55
+    rationale: "Medium carryover — audio creates lingering brand recall"
+
+  ooh:
+    alpha_mu: 0.60
+    alpha_sigma: 0.20
+    lam_mu: 2.0
+    lam_sigma: 0.55
+    rationale: "Long carryover — OOH builds reach through repeated physical exposure"
+
+  tv:
+    alpha_mu: 0.65
+    alpha_sigma: 0.20
+    lam_mu: 1.5
+    lam_sigma: 0.45
+    rationale: "Longest carryover, gradual saturation — TV builds reach slowly"
+
+  print:
+    alpha_mu: 0.50
+    alpha_sigma: 0.17
+    lam_mu: 2.0
+    lam_sigma: 0.55
+    rationale: "Medium-long carryover"
+
+  digital_display:
+    alpha_mu: 0.25
+    alpha_sigma: 0.12
+    lam_mu: 3.0
+    lam_sigma: 0.8
+    rationale: "Fallback for unclassified digital channels"
+
+# Widening factors for sparse channels (>30% zero-spend weeks)
+sparse_channel_sigma_multiplier: 1.5
+
+# Minimum number of observations to use tight priors
+min_obs_for_tight_priors: 52
