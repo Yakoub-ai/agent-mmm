@@ -1,1 +1,138 @@
-"""CMO report generator. Implemented in Phase 8."""
+"""CMO report: plain-language ROI narrative, channel contribution summary, top 3 recommendations."""
+from __future__ import annotations
+import json
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+from agent_mmm.spec import MMMSpec
+from agent_mmm.target_units import is_monetary, roas_label, cpa_label
+from agent_mmm.workspace import ensure_workspace
+
+
+def generate_cmo_report(
+    spec: MMMSpec,
+    run_id: str,
+    metrics: dict | None = None,
+    diagnostics: dict | None = None,
+    channel_contributions: dict | None = None,
+    base: str | Path = ".",
+) -> str:
+    """Generate CMO-facing plain-language MMM report. Returns report as Markdown string."""
+    ws = ensure_workspace(base)
+
+    company = spec.company_name
+    industry = spec.industry
+    target_label = spec.target_unit.label
+    unit = spec.target_unit
+    channels = spec.channel_columns()
+    n_channels = len(channels)
+
+    tier = diagnostics.get("summary", {}).get("tier", "UNKNOWN") if diagnostics else "UNKNOWN"
+    tier_line = {
+        "PASS": "Model is well-validated.",
+        "WARN": "Model has minor issues — treat results with moderate confidence.",
+        "FAIL": "Model has significant issues — results may not be reliable.",
+    }.get(tier, "Model validation status unknown.")
+
+    in_sample_r2 = metrics.get("r2_insample") if metrics else None
+    r2_line = (
+        f"{in_sample_r2*100:.1f}% of {target_label} variance explained by the model."
+        if in_sample_r2
+        else "Model fit statistics unavailable."
+    )
+
+    report_date = datetime.now().strftime("%B %d, %Y")
+
+    lines = [
+        f"# Marketing Mix Model — Executive Summary",
+        f"",
+        f"**Company**: {company}  ",
+        f"**Industry**: {industry}  ",
+        f"**Report Date**: {report_date}  ",
+        f"**Model Run**: `{run_id}`  ",
+        f"",
+        "---",
+        "",
+        "## What the Model Found",
+        "",
+        f"We analyzed {n_channels} marketing channel{'s' if n_channels > 1 else ''} and their impact on **{target_label}**.",
+        f"{r2_line}",
+        f"{tier_line}",
+        "",
+    ]
+
+    # Channel contribution summary
+    if channel_contributions:
+        lines += ["## Channel Performance", "", "How each channel contributes to sales:  ", ""]
+        sorted_channels = sorted(channel_contributions.items(), key=lambda x: x[1], reverse=True)
+        for ch, pct in sorted_channels:
+            bar = "█" * int(pct / 5) + "░" * (20 - int(pct / 5))
+            lines.append(f"| {ch} | {bar} | {pct:.1f}% |")
+        lines.append("")
+
+        top_channel = sorted_channels[0][0] if sorted_channels else "unknown"
+        lines += [
+            f"**{top_channel}** is your highest-contributing channel.",
+            "",
+        ]
+    else:
+        lines += [
+            "## Channel Performance",
+            "",
+            "*Detailed channel contribution data requires fitted model with contribution extraction.*",
+            "*Run the model and extract contributions to populate this section.*",
+            "",
+        ]
+
+    # ROAS framing
+    roas_lbl = roas_label(unit)
+    lines += [
+        "## Marketing Efficiency",
+        "",
+        f"**Efficiency metric for this model**: {roas_lbl}",
+        "",
+    ]
+    if is_monetary(unit):
+        lines += [f"*Returns measured in {unit.currency_code} per {unit.currency_code} spent.*", ""]
+    else:
+        lines += [f"*Efficiency measured as cost per {target_label} acquired.*", ""]
+        if unit.value_per_unit:
+            lines += [
+                f"*Each {target_label} is valued at approximately {unit.value_per_unit:,.0f} {unit.currency_code or 'monetary units'} — use this to convert to revenue impact.*",
+                "",
+            ]
+
+    # Recommendations
+    lines += [
+        "## Top 3 Recommendations",
+        "",
+    ]
+
+    if channel_contributions and len(channel_contributions) >= 2:
+        sorted_ch = sorted(channel_contributions.items(), key=lambda x: x[1], reverse=True)
+        top = sorted_ch[0][0]
+        bottom = sorted_ch[-1][0]
+        lines += [
+            f"1. **Invest more in {top}** — your highest-contributing channel. Test a 10–20% budget increase.",
+            f"2. **Review {bottom}** — lowest contribution. Investigate quality, targeting, or consider reallocation.",
+            f"3. **Run `/mmm-improve`** — the iterative improvement tournament may find a better model configuration.",
+        ]
+    else:
+        lines += [
+            "1. **Extract channel contributions** — run the model with contribution variables to identify winners.",
+            "2. **Run diagnostics** — use `/mmm-diagnose` to validate model quality.",
+            "3. **Improve iteratively** — use `/mmm-improve` to find the best model configuration.",
+        ]
+
+    lines += ["", "---", f"*Generated by agent-mmm | Run `{run_id}` | {report_date}*", ""]
+
+    report_str = "\n".join(lines)
+
+    # Save
+    reports_dir = ws / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    with open(reports_dir / "cmo.md", "w") as f:
+        f.write(report_str)
+
+    return report_str

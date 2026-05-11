@@ -1,1 +1,158 @@
-"""Data Science report generator. Implemented in Phase 8."""
+"""Data Science report: full diagnostics, model spec, convergence stats, reproducibility."""
+from __future__ import annotations
+import json
+import sys
+from datetime import datetime
+from pathlib import Path
+
+from agent_mmm.spec import MMMSpec
+from agent_mmm.workspace import ensure_workspace
+
+
+def generate_ds_report(
+    spec: MMMSpec,
+    run_id: str,
+    metrics: dict | None = None,
+    diagnostics: dict | None = None,
+    base: str | Path = ".",
+) -> str:
+    """Generate Data Science reproducibility and diagnostics report."""
+    ws = ensure_workspace(base)
+    report_date = datetime.now().strftime("%B %d, %Y")
+
+    lines = [
+        "# Marketing Mix Model — Data Science Report",
+        "",
+        f"**Company**: {spec.company_name}  ",
+        f"**Report Date**: {report_date}  ",
+        f"**Run ID**: `{run_id}`  ",
+        "",
+        "---",
+        "",
+        "## Model Specification",
+        "",
+        "| Parameter | Value |",
+        "|-----------|-------|",
+        f"| MMM Type | {spec.mmm_type.value} |",
+        f"| Data Path | `{spec.data_path}` |",
+        f"| Target Column | `{spec.target_column}` |",
+        f"| Target Unit | {spec.target_unit.label} ({spec.target_unit.kind.value}) |",
+        f"| Channels | {len(spec.channel_columns())} |",
+        f"| Controls | {len(spec.control_columns())} |",
+        f"| Granularity | {spec.granularity.value} |",
+        f"| Fourier Modes | {spec.seasonality.yearly_fourier_modes} |",
+        f"| Multi-geo | {spec.geo.is_panel} |",
+        "",
+        "### Channel Configuration",
+        "",
+        "| Column | Type | Label | Active |",
+        "|--------|------|-------|--------|",
+    ]
+
+    from agent_mmm.utils.channel_classifier import classify_channel
+
+    for ch in spec.channels:
+        ch_type = ch.channel_type or classify_channel(ch.column)
+        lines.append(
+            f"| `{ch.column}` | {ch_type} | {ch.label or '—'} | {'yes' if ch.is_active else 'no'} |"
+        )
+
+    lines += ["", "### Control Variables", ""]
+    if spec.controls:
+        lines += ["| Column | Label | Source |", "|--------|-------|--------|"]
+        for ctrl in spec.controls:
+            lines.append(f"| `{ctrl.column}` | {ctrl.label or '—'} | {ctrl.source} |")
+    else:
+        lines.append("*No controls configured.*")
+
+    lines += ["", "## Fit Metrics", ""]
+    if metrics:
+        for k, v in metrics.items():
+            if k not in (
+                "run_id",
+                "completed_at",
+                "sampler_config",
+                "prior_pc",
+                "idata_path",
+                "idata_save_error",
+            ):
+                lines.append(f"- **{k}**: {v}")
+    else:
+        lines.append("*Metrics not available.*")
+
+    lines += ["", "## Diagnostics", ""]
+    if diagnostics:
+        tier = diagnostics.get("summary", {}).get("tier", "UNKNOWN")
+        lines.append(f"**Overall Tier**: {tier}")
+
+        conv = diagnostics.get("checks", {}).get("convergence", {})
+        if conv.get("available"):
+            lines += [
+                "",
+                "### Convergence",
+                "",
+                f"- Max rhat: `{conv.get('max_rhat', 'N/A')}`",
+                f"- Min ESS_bulk: `{conv.get('min_ess_bulk', 'N/A')}`",
+                f"- Divergences: `{conv.get('n_divergences', 'N/A')}`",
+            ]
+
+        ov = diagnostics.get("checks", {}).get("overfit", {})
+        if ov.get("available"):
+            lines += [
+                "",
+                "### Overfit Detection",
+                "",
+                f"- In-sample R2: `{ov.get('in_sample_r2')}`",
+                f"- CV R2: `{ov.get('cv_r2')}`",
+                f"- Gap: `{ov.get('gap')}` (threshold: 0.20)",
+                f"- Overfit: `{ov.get('overfit')}`",
+            ]
+
+        if diagnostics.get("errors"):
+            lines += ["", "### Errors", ""]
+            for e in diagnostics["errors"]:
+                lines.append(f"- {e}")
+
+        if diagnostics.get("warnings"):
+            lines += ["", "### Warnings", ""]
+            for w in diagnostics["warnings"]:
+                lines.append(f"- {w}")
+
+    # Reproducibility
+    py_ver = sys.version.split()[0]
+    try:
+        import pymc_marketing
+
+        pmm_ver = pymc_marketing.__version__
+    except ImportError:
+        pmm_ver = "not installed"
+    try:
+        import arviz as az
+
+        az_ver = az.__version__
+    except ImportError:
+        az_ver = "not installed"
+
+    lines += [
+        "",
+        "## Reproducibility",
+        "",
+        f"- **Run ID**: `{run_id}`",
+        f"- **Generated at**: {report_date}",
+        f"- **Python**: {py_ver}",
+        f"- **pymc-marketing**: {pmm_ver}",
+        f"- **arviz**: {az_ver}",
+        f"- **InferenceData**: `./mmm-workspace/runs/{run_id}/idata.nc`",
+        f"- **Config**: `./mmm-workspace/runs/{run_id}/config.json`",
+        "",
+        "---",
+        f"*Generated by agent-mmm | Run `{run_id}` | {report_date}*",
+        "",
+    ]
+
+    report_str = "\n".join(lines)
+    ws_reports = ws / "reports"
+    ws_reports.mkdir(parents=True, exist_ok=True)
+    with open(ws_reports / "ds.md", "w") as f:
+        f.write(report_str)
+    return report_str

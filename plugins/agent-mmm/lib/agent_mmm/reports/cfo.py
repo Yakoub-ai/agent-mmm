@@ -1,1 +1,141 @@
-"""CFO report generator. Implemented in Phase 8."""
+"""CFO report: spend vs return tables, credible intervals, CPA/ROAS, target-unit-aware."""
+from __future__ import annotations
+import json
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+from agent_mmm.spec import MMMSpec
+from agent_mmm.target_units import is_monetary, cpa_label, roas_label, spend_to_return_ratio
+from agent_mmm.workspace import ensure_workspace
+
+
+def generate_cfo_report(
+    spec: MMMSpec,
+    run_id: str,
+    metrics: dict | None = None,
+    diagnostics: dict | None = None,
+    channel_spend: dict | None = None,
+    channel_contributions: dict | None = None,
+    credible_intervals: dict | None = None,
+    base: str | Path = ".",
+) -> str:
+    """Generate CFO-facing spend vs return report. Target-unit-aware (CPA or ROAS)."""
+    ws = ensure_workspace(base)
+    unit = spec.target_unit
+    company = spec.company_name
+    report_date = datetime.now().strftime("%B %d, %Y")
+    is_mon = is_monetary(unit)
+
+    lines = [
+        f"# Marketing Mix Model — Finance Report",
+        f"",
+        f"**Company**: {company}  ",
+        f"**Report Date**: {report_date}  ",
+        f"**Model Run**: `{run_id}`  ",
+        f"**Target Unit**: {unit.label} ({unit.kind.value})",
+        f"",
+        "---",
+        "",
+    ]
+
+    # Efficiency metric explanation
+    if is_mon:
+        lines += [
+            "## Efficiency Framework",
+            "",
+            f"**ROAS** (Return on Ad Spend): {unit.currency_code} returned per {unit.currency_code} spent.",
+            f"Formula: incremental {unit.label} ÷ channel spend.",
+            "",
+        ]
+    else:
+        lines += [
+            "## Efficiency Framework",
+            "",
+            f"**CPA** (Cost Per Acquisition): spend required to acquire 1 {unit.label}.",
+            f"Formula: channel spend ÷ incremental {unit.label}s acquired.",
+            "",
+        ]
+        if unit.value_per_unit:
+            lines += [
+                f"**Revenue-equivalent**: each {unit.label} is valued at {unit.value_per_unit:,.2f} {unit.currency_code or 'monetary units'}.",
+                f"This enables ROAS calculation: incremental {unit.label}s × {unit.value_per_unit:,.2f} ÷ spend.",
+                "",
+            ]
+
+    # Spend vs return table
+    lines += ["## Channel Spend vs Return", ""]
+
+    if channel_spend and channel_contributions:
+        if is_mon:
+            lines += [
+                "| Channel | Spend | Incremental Return | ROAS | 90% CI |",
+                "|---------|-------|-------------------|------|--------|",
+            ]
+        else:
+            col4 = f"CPA ({unit.label})"
+            lines += [
+                f"| Channel | Spend | Incremental {unit.label}s | {col4} | 90% CI |",
+                f"|---------|-------|{'---'*6}|{'---'*6}|--------|",
+            ]
+
+        total_spend = sum(channel_spend.values())
+        total_units = sum(channel_contributions.values())
+
+        for ch in spec.channel_columns():
+            spend = channel_spend.get(ch, 0)
+            units_ch = channel_contributions.get(ch, 0)
+            ratio = spend_to_return_ratio(spend, units_ch, unit)
+
+            ci = credible_intervals.get(ch, {}) if credible_intervals else {}
+            ci_str = f"[{ci.get('lo', '—')}, {ci.get('hi', '—')}]"
+
+            if is_mon:
+                roas_val = f"{ratio['roas']:.2f}x" if ratio.get("roas") else "—"
+                lines.append(
+                    f"| {ch} | {_fmt_currency(spend, unit)} | {_fmt_currency(units_ch, unit)} | {roas_val} | {ci_str} |"
+                )
+            else:
+                cpa_val = f"{ratio['cpa']:.0f}" if ratio.get("cpa") else "—"
+                lines.append(f"| {ch} | {spend:,.0f} | {units_ch:.0f} | {cpa_val} | {ci_str} |")
+
+        lines.append("")
+        lines += [
+            f"**Total spend analyzed**: {_fmt_currency(total_spend, unit) if is_mon else f'{total_spend:,.0f}'}"
+        ]
+        if unit.value_per_unit and not is_mon:
+            revenue_equiv = total_units * unit.value_per_unit
+            lines += [f"**Revenue-equivalent total**: {revenue_equiv:,.0f} {unit.currency_code or ''}"]
+        lines.append("")
+    else:
+        lines += [
+            "*Detailed spend vs return table requires channel contribution data.*",
+            "*Extract contributions from the fitted model to populate this section.*",
+            "",
+        ]
+
+    # Model confidence
+    tier = diagnostics.get("summary", {}).get("tier", "UNKNOWN") if diagnostics else "UNKNOWN"
+    conf = {"PASS": "High", "WARN": "Moderate", "FAIL": "Low"}.get(tier, "Unknown")
+    lines += [
+        "## Model Confidence",
+        "",
+        f"**Confidence level**: {conf} (diagnostic tier: {tier})",
+    ]
+    if tier == "FAIL":
+        lines += [
+            "WARNING: Low confidence — model diagnostics indicate issues. Do not use for budget decisions until resolved."
+        ]
+    lines += ["", "---", f"*Generated by agent-mmm | Run `{run_id}` | {report_date}*", ""]
+
+    report_str = "\n".join(lines)
+    ws_reports = ws / "reports"
+    ws_reports.mkdir(parents=True, exist_ok=True)
+    with open(ws_reports / "cfo.md", "w") as f:
+        f.write(report_str)
+    return report_str
+
+
+def _fmt_currency(val: float, unit) -> str:
+    code = unit.currency_code or ""
+    return f"{code} {val:,.0f}".strip()
