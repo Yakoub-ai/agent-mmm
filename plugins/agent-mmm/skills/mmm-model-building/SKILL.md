@@ -204,3 +204,16 @@ model = MMM(
 2. **Control for confounders:** When modeling SEM clicks, include search volume (GQV) as a control, not a channel
 3. **Combine correlated channels:** If two channels always co-occur (e.g., FB + IG), combine them
 4. **Match to target:** Only include channels that could plausibly affect the target variable
+
+## Library Integration
+
+Use `agent_mmm.prior_engine.recommend_priors(spec, audit_findings, base)` to auto-generate `model_config` from spec channels. The function:
+- Classifies each channel using `agent_mmm.utils.channel_classifier.classify_channel(col_name)`
+- Applies moment-matching from `agent_mmm.utils.moment_match` (Beta for adstock_alpha, Gamma for saturation_lam)
+- Widens priors automatically if data is sparse (>30% zeros → 1.5x sigma) or short (<52 rows → 1.3x)
+- Outputs `mmm-workspace/priors/model_config.json` + `prior_audit_report.md`
+
+Use `agent_mmm.model_factory.build_mmm(spec, model_config_dict)` to build the MMM instance from spec.
+Use `agent_mmm.fit_runner.run_fit(spec, ..., base)` for the full fit pipeline (prior PC → fit → posterior PC → save).
+
+Run via slash commands: `/mmm-recommend-priors`, `/mmm-build`, `/mmm-fit`

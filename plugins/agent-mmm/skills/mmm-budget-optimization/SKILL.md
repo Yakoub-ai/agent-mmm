@@ -223,3 +223,12 @@ for name, alloc in scenarios.items():
     # (requires passing allocation through saturation + adstock transforms)
     print(f"{name}: expected outcome = ...")
 ```
+
+## Library Integration (v1)
+
+Budget optimization via `BudgetOptimizer` is not yet wrapped in the agent_mmm library in v1.
+Use the pymc-marketing API directly as documented in this skill.
+The `/mmm-report` command generates current-vs-optimal budget analysis in the MOps report using
+simplified response-curve-based allocation (not full BudgetOptimizer).
+
+Full BudgetOptimizer integration is planned for v2.

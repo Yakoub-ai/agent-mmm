@@ -118,3 +118,13 @@ Need at least `n_init + n_folds * forecast_horizon` observations for meaningful 
 | VIF > 10 between channels | Attribution is unreliable | Combine correlated channels |
 | Sudden structural break | Model fit degrades | Split pre/post or add indicator variable |
 | Target is count data | Violates continuous assumption | Use log transform or different likelihood |
+
+## Library Integration
+
+Use `agent_mmm.data_audit.run_audit(spec, base)` to run all 11 checks programmatically. The function writes:
+- `mmm-workspace/audit/audit.json` — machine-readable findings with `data_quality_tier`: PASS/WARN/FAIL
+- `mmm-workspace/audit/audit_report.md` — human-readable Markdown report
+
+Run via slash command: `/mmm-analyze-data`
+
+Import: `from agent_mmm.data_audit import run_audit`

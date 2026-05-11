@@ -188,3 +188,15 @@ model.plot.param_stability()  # Parameter stability across folds
 | Poor fit | R² < 0.60 | Add controls, check target, add channels |
 | Bimodal posterior | Multiple peaks in trace | Check for model identifiability issues |
 | Slow sampling | Hours to converge | Reduce l_max, fewer channels, simpler model |
+
+## Library Integration
+
+Use `agent_mmm.diagnostics.run_diagnostics(run_id, idata_path, metrics_path, base)` to run all 5 diagnostic checks. The function writes:
+- `mmm-workspace/runs/<run-id>/diagnostics.json` — structured findings
+- `mmm-workspace/runs/<run-id>/diagnostics_report.md` — human-readable report
+
+Key constants: `RHAT_THRESHOLD = 1.05`, `ESS_THRESHOLD = 400`, `OVERFIT_GAP_THRESHOLD = 0.20`
+
+Run via slash command: `/mmm-diagnose`
+
+Import: `from agent_mmm.diagnostics import run_diagnostics`

@@ -323,3 +323,20 @@ model.sensitivity.run_sweep(
 )
 fig = model.plot.sensitivity_analysis()
 ```
+
+## agent_mmm Library Quick Reference
+
+The plugin ships `agent_mmm` at `plugins/agent-mmm/lib/agent_mmm/`. Install: `pip install -e plugins/agent-mmm`.
+
+| Module | Key Function | Purpose |
+|--------|-------------|---------|
+| `data_audit` | `run_audit(spec, base)` | 11-check data quality audit |
+| `controls_engine` | `recommend_controls(spec, audit_findings, base)` | External factors recommender |
+| `prior_engine` | `recommend_priors(spec, audit_findings, base)` | Auto-generate model_config |
+| `model_factory` | `build_mmm(spec, model_config_dict)` | Build MMM instance |
+| `fit_runner` | `run_fit(spec, ..., base)` | Full fit pipeline |
+| `diagnostics` | `run_diagnostics(run_id, ..., base)` | Convergence + fit + CV checks |
+| `iter_loop` | `run_tournament(spec_path, ..., base)` | Tournament + refinement loop |
+| `reports.cmo/cfo/mops/ds` | `generate_*_report(spec, run_id, ...)` | Stakeholder reports |
+
+Workspace layout: all artifacts in `./mmm-workspace/` — `spec.yaml`, `audit/`, `controls/`, `priors/`, `runs/<id>/`, `leaderboard.json`, `reports/`.

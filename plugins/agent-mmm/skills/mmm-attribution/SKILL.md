@@ -205,3 +205,16 @@ If running multiple models (sales, search, SEM funnel):
 3. **Over-interpreting small channels** -- Channels with <2% spend have noisy estimates
 4. **Ignoring uncertainty** -- Always show HDI/credible intervals, not just point estimates
 5. **Comparing across different targets** -- ROAS from a sales model vs. GQV model are not comparable
+
+## Library Integration
+
+Attribution is integrated into stakeholder reports. Use:
+- `agent_mmm.reports.cmo.generate_cmo_report(spec, run_id, ...)` — plain-language contribution narrative
+- `agent_mmm.reports.cfo.generate_cfo_report(spec, run_id, ...)` — target-unit-aware spend vs return
+- `agent_mmm.reports.mops.generate_mops_report(spec, run_id, ...)` — per-channel saturation + budget
+- `agent_mmm.reports.ds.generate_ds_report(spec, run_id, ...)` — full technical attribution details
+
+All reports are target-unit-aware: monetary targets → ROAS framing; acquisition/volume targets → CPA framing.
+`value_per_unit` in spec enables both CPA and revenue-equivalent ROAS in the same CFO report.
+
+Run via slash command: `/mmm-report`
