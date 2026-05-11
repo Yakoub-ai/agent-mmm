@@ -1,101 +1,119 @@
-# AgentMMM - Marketing Mix Model Expert Plugin for Claude Code
+# agent-mmm
 
-A Claude Code plugin providing an expert MMM agent and specialized skills for building, evaluating, and optimizing Marketing Mix Models with [pymc-marketing](https://github.com/pymc-labs/pymc-marketing) v0.18.2+.
+A complete Marketing Mix Model (MMM) framework plugin for Claude Code, built on [pymc-marketing](https://github.com/pymc-labs/pymc-marketing) v0.19.1+.
 
-## Features
+## What it does
 
-- **AgentMMM Agent** -- Deep consultation subagent for MMM tasks (model review, debugging, building, interpretation)
-- **6 Specialized Skills** -- Loaded on-demand for focused guidance:
-  - `mmm-data-quality` -- Data preparation, validation, quality assessment
-  - `mmm-model-building` -- Model construction, prior specification, moment matching
-  - `mmm-diagnostics` -- Convergence debugging, fit metrics, validation
-  - `mmm-attribution` -- Channel contributions, ROAS, response curves, interpretation
-  - `mmm-budget-optimization` -- Budget allocation, sensitivity analysis
-  - `mmm-api-reference` -- Complete pymc-marketing API reference
+Transforms raw marketing data into fitted Bayesian MMMs with full stakeholder reporting:
 
-## Installation
+1. **Interactive intake** → captures company context, target unit, channels, controls
+2. **Automated data audit** → 11 quality checks, VIF, structural breaks, seasonality
+3. **Controls recommender** → external factors catalog by industry + region
+4. **Prior recommendation engine** → channel-type-aware Bayesian priors with moment matching
+5. **Model build + fit** → pymc-marketing multidimensional MMM with MCMC
+6. **Diagnostics** → convergence, overfit detection, prior-pull, plausibility checks
+7. **Iterative improvement** → tournament of variants + posterior-informed prior tightening
+8. **Stakeholder reports** → CMO / CFO / Marketing Ops / Data Science, target-unit-aware
 
-### Method 1 — Interactive (recommended)
+## Agents
 
-1. Open Claude Code and type `/plugins`
-2. Go to the **Marketplaces** tab → **+ Add Marketplace**
-3. Enter the repo URL: `https://github.com/Yakoub-ai/agent-mmm`
-4. Go to the **Discover** tab → find **agent-mmm** → select **Install for you (user scope)**
-5. Restart Claude Code
+| Agent | Role |
+|-------|------|
+| `agent-mmm` | Orchestrator — routes tasks, loads skills, delegates to specialists |
+| `mmm-modeler` | Model construction and fitting specialist |
+| `mmm-diagnostician` | Convergence and validation specialist |
+| `mmm-improver` | Iterative improvement and tournament specialist |
+| `mmm-reporter` | Stakeholder report generation specialist |
 
-### Method 2 — Project-level (for teams)
+## Slash Commands
 
-Add this to your project's `.claude/settings.json`:
+| Command | Purpose |
+|---------|---------|
+| `/mmm-intake-quick` | 5-question quick intake — creates minimal `spec.yaml` |
+| `/mmm-intake` | Full ~25-question intake — creates production-ready `spec.yaml` |
+| `/mmm-analyze-data` | Run automated data quality audit |
+| `/mmm-recommend-controls` | Recommend external factors and control columns |
+| `/mmm-recommend-priors` | Generate channel-specific Bayesian priors |
+| `/mmm-build` | Build MMM from spec.yaml and model_config.json |
+| `/mmm-fit` | Run MCMC fitting pipeline (prior PC → fit → posterior PC) |
+| `/mmm-diagnose` | Run diagnostics on a fitted model run |
+| `/mmm-improve` | Launch tournament + posterior-informed refinement loop |
+| `/mmm-report` | Generate all four stakeholder reports |
+| `/mmm-status` | Show workspace status and run history |
 
-```json
-{
-  "extraKnownMarketplaces": {
-    "yakoub-ai-plugins": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/Yakoub-ai/agent-mmm"
-      }
-    }
-  },
-  "enabledPlugins": {
-    "agent-mmm@yakoub-ai-plugins": true
-  }
-}
+## Skills
+
+| Skill | Covers |
+|-------|--------|
+| `mmm-data-quality` | Data validation, completeness, collinearity, structural breaks |
+| `mmm-model-building` | Adstock/saturation selection, prior specification, fitting strategy |
+| `mmm-diagnostics` | Convergence thresholds, overfit detection, debugging decision tree |
+| `mmm-attribution` | Channel contributions, ROAS, response curves, decomposition |
+| `mmm-budget-optimization` | BudgetOptimizer API, sensitivity analysis, allocation |
+| `mmm-api-reference` | Complete pymc-marketing v0.19.1+ API reference |
+| `mmm-intake-questionnaire` | Intake Q&A structure, spec.yaml schema |
+| `mmm-greenfield-vs-brownfield` | GF/BF decision guide, Series A/B/C funnel design |
+| `mmm-external-factors-catalog` | Industry/region control catalog |
+| `mmm-iterative-improvement` | Tournament mechanics, posterior-informed refinement |
+| `mmm-stakeholder-reporting` | CMO/CFO/MOps/DS report templates and content guides |
+| `mmm-target-units` | Non-monetary targets, CPA vs ROAS framing, value_per_unit |
+| `mmm-multi-geo-panel` | Panel data format, multidimensional API, geo validation |
+
+## Python Library
+
+The plugin ships `agent_mmm` at `lib/agent_mmm/`. Install with:
+```bash
+pip install -e plugins/agent-mmm
 ```
 
-Teammates will be prompted to install the plugin when they open the project in Claude Code.
+Key modules:
+- `agent_mmm.data_audit` — `run_audit(spec, base)`
+- `agent_mmm.controls_engine` — `recommend_controls(spec, audit_findings, base)`
+- `agent_mmm.prior_engine` — `recommend_priors(spec, audit_findings, base)`
+- `agent_mmm.model_factory` — `build_mmm(spec, model_config_dict)`
+- `agent_mmm.fit_runner` — `run_fit(spec, ..., base)`
+- `agent_mmm.diagnostics` — `run_diagnostics(run_id, ..., base)`
+- `agent_mmm.iter_loop` — `run_tournament(spec_path, ..., base)`
+- `agent_mmm.reports.{cmo,cfo,mops,ds}` — stakeholder report generators
 
-## Usage
+## Workspace Layout
 
-### Agent (Deep Consultation)
-
-The agent is automatically dispatched when you discuss MMM topics:
-
-- "Review my MMM model convergence diagnostics"
-- "Help me build an MMM with pymc-marketing for 6 channels"
-- "Interpret the channel contributions and ROAS from my model"
-- "Debug the divergences I'm getting during sampling"
-- "Optimize my media budget allocation"
-
-### Skills (Auto-Activating)
-
-Skills activate automatically when relevant context is detected (e.g., working with pymc-marketing code, discussing MMM concepts).
-
-## Architecture
-
-The agent has core MMM knowledge embedded (imports, scaling rules, common pitfalls) and loads specialized skills on-demand based on the task. Multiple skills can be loaded in parallel for tasks spanning multiple areas.
+All artifacts live in `./mmm-workspace/` in your project directory:
 
 ```
-agent-mmm (core routing + pitfalls)
-  ├── mmm-data-quality        (data prep & validation)
-  ├── mmm-model-building      (priors, transforms, fitting)
-  ├── mmm-diagnostics         (convergence, metrics, debugging)
-  ├── mmm-attribution         (contributions, ROAS, interpretation)
-  ├── mmm-budget-optimization (budget optimizer, sensitivity)
-  └── mmm-api-reference       (full API signatures & methods)
+./mmm-workspace/
+├── spec.yaml                  # single source of truth
+├── audit/                     # data quality report
+├── controls/                  # recommended controls
+├── priors/                    # model_config.json + prior audit
+├── runs/                      # one directory per model run
+│   └── <run-id>/
+│       ├── idata.nc           # ArviZ InferenceData (fitted model)
+│       ├── metrics.json       # in-sample + CV metrics
+│       └── diagnostics.json   # convergence + fit checks
+├── leaderboard.json           # tournament scores
+└── reports/                   # cmo.md, cfo.md, mops.md, ds.md
 ```
-
-## Compatibility
-
-This plugin is **Claude Code only**. It uses Claude Code's plugin system (agents, skills, YAML frontmatter) which is not compatible with:
-
-- **GitHub Copilot** -- Uses a different extension system (VS Code extensions / Copilot Extensions API)
-- **Cursor** -- Uses its own rules/context system
-- **Other AI coding tools** -- Each has its own plugin format
-
-However, the knowledge content (markdown files in `skills/`) can be manually adapted as context files for other tools.
-
-## Grounded In
-
-- [pymc-marketing](https://github.com/pymc-labs/pymc-marketing) v0.18.2+ (multidimensional MMM API)
-- [PyMC](https://www.pymc.io/) Bayesian modeling framework
-- [ArviZ](https://arviz-devs.github.io/arviz/) diagnostics and visualization
 
 ## Requirements
 
+- Python 3.11+
+- `pymc-marketing >= 0.19.1`
+- `pymc-extras` (for `Prior`)
+- `pydantic >= 2`
+- `statsmodels`, `scipy`, `holidays`
 - Claude Code with plugin support
-- pymc-marketing v0.18.2+ installed in your Python environment (for running model code)
 
-## License
+## Workflow
 
-MIT
+```
+/mmm-intake           # answer questions → spec.yaml
+/mmm-analyze-data     # audit data quality
+/mmm-recommend-controls  # get external factor suggestions
+/mmm-recommend-priors # generate priors for your channels
+/mmm-build            # build the model
+/mmm-fit              # fit with MCMC
+/mmm-diagnose         # check convergence and fit quality
+/mmm-improve          # run tournament to find best variant
+/mmm-report           # generate stakeholder reports
+```

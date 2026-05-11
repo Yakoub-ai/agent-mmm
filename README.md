@@ -1,17 +1,18 @@
-# agent-mmm
+# Yakoub AI Plugins — Claude Code Marketplace
 
-A Claude Code plugin providing an expert MMM agent and specialized skills for building, evaluating, and optimizing Marketing Mix Models with [pymc-marketing](https://github.com/pymc-labs/pymc-marketing) v0.18.2+.
+A Claude Code plugin marketplace with production-ready AI agents, skills, and tools.
 
-## What's included
+## Plugins
 
-- **agent-mmm** — Deep consultation subagent for MMM tasks: model review, convergence debugging, building, and results interpretation
-- **6 specialized skills** loaded on-demand:
-  - `mmm-data-quality` — Data preparation, validation, collinearity checks
-  - `mmm-model-building` — Model construction, adstock/saturation, prior specification
-  - `mmm-diagnostics` — Convergence debugging, fit metrics, overfitting detection
-  - `mmm-attribution` — Channel contributions, ROAS, response curves
-  - `mmm-budget-optimization` — Budget allocation, BudgetOptimizer, sensitivity analysis
-  - `mmm-api-reference` — Complete pymc-marketing API reference
+### [agent-mmm](./plugins/agent-mmm/) — Marketing Mix Model Framework
+
+A complete MMM framework built on pymc-marketing v0.19.1+. Goes from raw CSV to stakeholder-ready reports with automated data auditing, Bayesian prior recommendation, iterative model improvement, and four stakeholder report formats.
+
+**Agents**: `agent-mmm` (orchestrator), `mmm-modeler`, `mmm-diagnostician`, `mmm-improver`, `mmm-reporter`
+
+**Commands**: `/mmm-intake`, `/mmm-intake-quick`, `/mmm-analyze-data`, `/mmm-recommend-controls`, `/mmm-recommend-priors`, `/mmm-build`, `/mmm-fit`, `/mmm-diagnose`, `/mmm-improve`, `/mmm-report`, `/mmm-status`
+
+**Skills**: data quality, model building, diagnostics, attribution, budget optimization, API reference, intake questionnaire, GF/BF guide, external factors catalog, iterative improvement, stakeholder reporting, target units, multi-geo panel
 
 ## Installation
 
@@ -19,13 +20,13 @@ A Claude Code plugin providing an expert MMM agent and specialized skills for bu
 
 1. Open Claude Code and type `/plugins`
 2. Go to the **Marketplaces** tab → **+ Add Marketplace**
-3. Enter the repo URL: `https://github.com/Yakoub-ai/agent-mmm`
-4. Go to the **Discover** tab → find **agent-mmm** → select **Install for you (user scope)**
+3. Enter: `https://github.com/Yakoub-ai/agent-mmm`
+4. Go to **Discover** → find **agent-mmm** → **Install for you (user scope)**
 5. Restart Claude Code
 
 ### Method 2 — Project-level (for teams)
 
-Add this to your project's `.claude/settings.json`:
+Add to your project's `.claude/settings.json`:
 
 ```json
 {
@@ -43,29 +44,8 @@ Add this to your project's `.claude/settings.json`:
 }
 ```
 
-Teammates will be prompted to install the plugin when they open the project in Claude Code.
-
-## Usage
-
-The agent triggers automatically on MMM-related discussions:
-
-- "Review my MMM model convergence diagnostics"
-- "Help me build an MMM with pymc-marketing for 6 channels"
-- "Debug the divergences I'm getting during sampling"
-- "Interpret the channel contributions and ROAS"
-- "Optimize my media budget allocation"
-
-Skills activate automatically when pymc-marketing code or MMM concepts are detected in context.
-
 ## Requirements
 
 - Claude Code with plugin support
-- pymc-marketing v0.18.2+ in your Python environment (for running model code)
-
-## Compatibility
-
-Claude Code only. Not compatible with GitHub Copilot, Cursor, or other AI coding tools.
-
-## License
-
-MIT
+- Python 3.11+ (for agent-mmm library)
+- `pymc-marketing >= 0.19.1`
