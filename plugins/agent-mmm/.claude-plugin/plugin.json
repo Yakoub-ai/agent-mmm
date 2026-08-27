@@ -19,7 +19,7 @@
     "data-science"
   ],
   "homepage": "https://github.com/Yakoub-ai/agent-mmm",
-  "skills": "../skills/",
-  "agents": "../agents/",
-  "commands": "../commands/"
+  "skills": "./skills",
+  "agents": "./agents",
+  "commands": "./commands"
 }
