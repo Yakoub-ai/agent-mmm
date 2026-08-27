@@ -74,7 +74,13 @@ def generate_ds_report(
                 "sampler_config",
                 "prior_pc",
                 "idata_path",
-                "idata_save_error",
+                "model_path",
+                "save_error",
+                "provenance",
+                "spec",
+                "calibration",
+                "started_at",
+                "framework",
             ):
                 lines.append(f"- **{k}**: {v}")
     else:
@@ -100,13 +106,74 @@ def generate_ds_report(
         if ov.get("available"):
             lines += [
                 "",
-                "### Overfit Detection",
+                "### Generalisation",
                 "",
                 f"- In-sample R2: `{ov.get('in_sample_r2')}`",
                 f"- CV R2: `{ov.get('cv_r2')}`",
                 f"- Gap: `{ov.get('gap')}` (threshold: 0.20)",
                 f"- Overfit: `{ov.get('overfit')}`",
             ]
+        elif ov.get("note"):
+            lines += ["", "### Generalisation", "", f"- {ov['note']}"]
+
+        # The baseline decides whether any channel number below it is readable,
+        # so it belongs above the attribution section, not in an appendix.
+        base = diagnostics.get("checks", {}).get("baseline", {})
+        if base.get("available"):
+            lines += [
+                "",
+                "### Baseline health",
+                "",
+                f"- Baseline share of target: `{base.get('baseline_share')}`",
+                f"- Periods with a negative baseline: `{base.get('negative_periods')}` "
+                f"({base.get('negative_pct')}%)",
+                f"- Baseline drift start-to-end: `{base.get('trend_drift_pct')}%`",
+                f"- Components counted: {', '.join(base.get('components', []))}",
+            ]
+
+        dec = diagnostics.get("checks", {}).get("decomposition", {})
+        if dec.get("available"):
+            lines += ["", "### Decomposition", "", "| Component | Share | Total |", "|---|---|---|"]
+            for comp, share in (dec.get("shares") or {}).items():
+                total = (dec.get("totals") or {}).get(comp)
+                lines.append(f"| {comp} | {share} | {total} |")
+
+        contraction = diagnostics.get("checks", {}).get("prior_contraction", {})
+        real = {
+            k: v for k, v in contraction.items()
+            if isinstance(v, dict) and "contraction" in v
+        }
+        if real:
+            lines += [
+                "",
+                "### What the data taught us",
+                "",
+                "Contraction is `1 - sd(posterior)/sd(prior)`. Below 0.2 the posterior is "
+                "largely the prior restated, and that parameter is an assumption rather "
+                "than a finding.",
+                "",
+                "| Parameter | Prior sd | Posterior sd | Contraction |",
+                "|---|---|---|---|",
+            ]
+            for k, v in sorted(real.items(), key=lambda kv: kv[1]["contraction"]):
+                flag = " (prior-dominated)" if v["prior_dominated"] else ""
+                lines.append(
+                    f"| {k} | {v['prior_sd']} | {v['posterior_sd']} | "
+                    f"{v['contraction']:.2f}{flag} |"
+                )
+
+        pl = diagnostics.get("checks", {}).get("attribution_plausibility", {})
+        if pl.get("available"):
+            lines += [
+                "",
+                "### Attribution plausibility",
+                "",
+                f"- Media share of modelled target: `{pl.get('media_share')}`",
+            ]
+            if pl.get("channel_shares_pct"):
+                lines += ["", "| Channel | Share of media effect |", "|---|---|"]
+                for ch, pct in pl["channel_shares_pct"].items():
+                    lines.append(f"| {ch} | {pct}% |")
 
         if diagnostics.get("errors"):
             lines += ["", "### Errors", ""]
@@ -117,6 +184,38 @@ def generate_ds_report(
             lines += ["", "### Warnings", ""]
             for w in diagnostics["warnings"]:
                 lines.append(f"- {w}")
+
+    # Calibration: whether any channel is anchored to a measurement, and which.
+    cal = (metrics or {}).get("calibration") or {}
+    lines += ["", "## Calibration", ""]
+    if cal.get("applied"):
+        lines += [
+            f"- {cal.get('n_tests')} lift test(s) attached as likelihood constraints.",
+            f"- Channels calibrated: {', '.join(cal.get('channels', []))}",
+            "",
+            "Calibrated channels carry an external anchor; the rest rest on observational "
+            "identification alone and deserve wider ranges in any recommendation.",
+        ]
+    else:
+        lines += [
+            f"- No lift-test constraints applied. {cal.get('reason', '')}".rstrip(),
+            "",
+            "Without an experiment, several very different attributions fit this data "
+            "equally well; the one reported is the one the priors preferred. This is the "
+            "model's largest limitation.",
+        ]
+
+    ppc = (metrics or {}).get("prior_pc") or {}
+    if ppc.get("ran") and ppc.get("coverage_90") is not None:
+        lines += [
+            "",
+            "## Prior predictive check",
+            "",
+            f"- 90% band coverage of observed periods: `{ppc.get('coverage_90')}`",
+            f"- Band width vs data range: `{ppc.get('band_width_vs_data_range')}x`",
+        ]
+        for note in ppc.get("notes", []):
+            lines.append(f"- {note}")
 
     # Reproducibility
     py_ver = sys.version.split()[0]
@@ -142,13 +241,25 @@ def generate_ds_report(
         f"- **Python**: {py_ver}",
         f"- **pymc-marketing**: {pmm_ver}",
         f"- **arviz**: {az_ver}",
-        f"- **InferenceData**: `./mmm-workspace/runs/{run_id}/idata.nc`",
-        f"- **Config**: `./mmm-workspace/runs/{run_id}/config.json`",
+        f"- **Model / inference data**: `./mmm-workspace/runs/{run_id}/model.nc` "
+        "(an `xarray.DataTree`)",
+        f"- **Metrics**: `./mmm-workspace/runs/{run_id}/metrics.json`",
         "",
         "---",
         f"*Generated by agent-mmm | Run `{run_id}` | {report_date}*",
         "",
     ]
+
+    prov = (metrics or {}).get("provenance") or {}
+    if prov:
+        lines += [
+            f"- **Data fingerprint**: `{prov.get('data_fingerprint')}`",
+            f"- **Random seed**: `{prov.get('random_seed')}`",
+        ]
+        env = prov.get("environment") or {}
+        if env:
+            versions = ", ".join(f"{k} {v}" for k, v in env.items() if v)
+            lines.append(f"- **Environment at fit time**: {versions}")
 
     report_str = "\n".join(lines)
     ws_reports = ws / "reports"

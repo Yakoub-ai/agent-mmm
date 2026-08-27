@@ -40,19 +40,27 @@ Variants differ on one or more of:
 ### Lighter Sampler Config for Tournament
 
 ```python
-sampler_config = {
-    "draws": 1000,
-    "tune": 1500,
-    "chains": 4,
-    "target_accept": 0.90
-}
+from agent_mmm.fit_runner import SAMPLER_QUICK   # 500 / 1000 / 4 @ 0.90
 ```
+
+Tournament rounds explore structure, so they run light. The winner is refit with
+`SAMPLER_FINAL` before any number leaves the room — a variant that wins on 500 draws has
+not been estimated precisely enough to quote.
 
 ### Scoring Function
 
 ```python
 score = cv_r2 * (1 - overfit_gap * 2) * convergence_factor * plausibility_factor
 ```
+
+**Score on out-of-sample performance and structural sanity, never on in-sample fit.**
+A tournament scored on R² selects the model that memorises best, which in MMM is usually
+the one with the most flexible baseline — and therefore the one that attributes least to
+media. Selecting on fit alone systematically biases the whole exercise towards concluding
+that marketing does not work.
+
+`plausibility_factor` should also penalise a negative baseline outright: a variant whose
+baseline goes negative has not produced a worse model, it has produced an invalid one.
 
 Where:
 - `cv_r2` — cross-validation R² (primary quality signal)
@@ -98,7 +106,7 @@ After selecting the winner, tighten priors for the next round:
 from agent_mmm.prior_engine import tighten_priors_from_posterior
 
 new_priors = tighten_priors_from_posterior(
-    idata_path="./mmm-workspace/<winner_run_id>/idata.nc",
+    idata_path="./mmm-workspace/runs/<winner_run_id>/model.nc",
     tighten_factor=0.7
 )
 ```
@@ -109,7 +117,7 @@ new_priors = tighten_priors_from_posterior(
 
 When improving an existing fitted model:
 
-1. Load the existing `idata.nc`
+1. Load the existing `model.nc` (an `xarray.DataTree`)
 2. Extract posterior statistics (mean, std per parameter)
 3. Use tightened posteriors as starting priors for the tournament
 4. This warm-starts the search near the existing solution
@@ -120,7 +128,7 @@ from agent_mmm.iter_loop import run_tournament
 leaderboard = run_tournament(
     spec_path="spec.yaml",
     output_dir="./mmm-workspace/",
-    existing_idata_path="./mmm-workspace/idata.nc",  # brownfield
+    existing_idata_path="./mmm-workspace/runs/<prev_run>/model.nc",  # brownfield
     n_variants=5,
     max_rounds=3
 )

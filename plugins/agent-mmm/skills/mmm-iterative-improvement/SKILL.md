@@ -88,7 +88,7 @@ All runs are tracked in `mmm-workspace/leaderboard.json`:
 
 ## Brownfield Improvement
 
-For brownfield projects, the first tournament round starts with tightened priors from the existing `idata.nc`. This is equivalent to a posterior-informed refinement step from the existing model. Subsequent rounds continue the normal tournament logic.
+For brownfield projects, the first tournament round starts with tightened priors from the existing `model.nc`. This is equivalent to a posterior-informed refinement step from the existing model. Subsequent rounds continue the normal tournament logic.
 
 ## Running the Loop
 

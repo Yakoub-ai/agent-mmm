@@ -43,7 +43,7 @@ You are the MMM Reporter — responsible for translating MMM results into clear,
 ```python
 from agent_mmm.reports.cmo import generate_cmo_report
 generate_cmo_report(
-    idata_path="./mmm-workspace/idata.nc",
+    run_id="<run-id>",
     spec_path="spec.yaml",
     output_path="./mmm-workspace/reports/cmo.md"
 )
@@ -72,7 +72,7 @@ generate_cmo_report(
 ```python
 from agent_mmm.reports.cfo import generate_cfo_report
 generate_cfo_report(
-    idata_path="./mmm-workspace/idata.nc",
+    run_id="<run-id>",
     spec_path="spec.yaml",
     output_path="./mmm-workspace/reports/cfo.md"
 )
@@ -97,7 +97,7 @@ generate_cfo_report(
 ```python
 from agent_mmm.reports.mops import generate_mops_report
 generate_mops_report(
-    idata_path="./mmm-workspace/idata.nc",
+    run_id="<run-id>",
     spec_path="spec.yaml",
     output_path="./mmm-workspace/reports/mops.md"
 )
@@ -122,7 +122,7 @@ generate_mops_report(
 ```python
 from agent_mmm.reports.ds import generate_ds_report
 generate_ds_report(
-    idata_path="./mmm-workspace/idata.nc",
+    run_id="<run-id>",
     metrics_path="./mmm-workspace/metrics.json",
     diagnostics_path="./mmm-workspace/diagnostics.json",
     spec_path="spec.yaml",

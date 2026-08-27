@@ -1,16 +1,18 @@
 ---
-description: Fit the MMM model — runs prior predictive check, MCMC sampling, and posterior predictive check. Saves InferenceData to ./mmm-workspace/runs/<run-id>/.
+description: Fit the MMM model — runs prior predictive check, MCMC sampling, and posterior predictive check. Attaches any lift-test constraints, then saves the model and metrics to ./mmm-workspace/runs/<run-id>/.
 ---
 
 # MMM Fit
 
-Run the full fit pipeline: prior predictive check → MCMC sampling → posterior predictive check → save artifacts.
+Run the full fit pipeline: build → prior predictive check → lift-test calibration → MCMC → posterior predictive → save.
 
 ## Steps
 
 1. Check `./mmm-workspace/spec.yaml` and `./mmm-workspace/priors/model_config.json` exist.
 
-2. Ask the user: "Which sampling mode? `quick` (draws=500, tune=1000, chains=2) for iteration, or `final` (draws=2000, tune=3000, chains=4) for production. Default: quick."
+2. Ask the user: "Which sampling profile? `quick` (500 draws / 1000 tune / 4 chains) for
+   iteration, or `final` (2000 / 3000 / 4 at target_accept 0.97) for anything that will
+   move budget. Default: quick."
 
 3. Run the fit:
    ```bash
@@ -32,16 +34,24 @@ Run the full fit pipeline: prior predictive check → MCMC sampling → posterio
    mode = "QUICK_OR_FINAL"  # replace with user choice
    sampler = SAMPLER_FINAL if mode == "final" else SAMPLER_QUICK
 
-   metrics = run_fit(
-       spec,
-       model_config_path="./mmm-workspace/priors/model_config.json",
-       sampler_config=sampler,
-       base=".",
-   )
-   
-   print(f"\n✅ Run complete: {metrics['run_id']}")
-   print(f"In-sample R²: {metrics.get('r2_insample')}")
-   print(f"InferenceData: {metrics.get('idata_path')}")
+   with open("./mmm-workspace/priors/model_config.json") as f:
+       priors = json.load(f)
+
+   metrics = run_fit(spec, priors=priors, sampler_config=sampler, base=".")
+
+   print(f"\nRun complete: {metrics['run_id']}")
+   print(f"In-sample R2: {metrics.get('r2_insample')} "
+         f"(per posterior-predictive draw, so it includes observation noise)")
+   ppc = metrics.get("prior_pc", {})
+   if ppc.get("coverage_90") is not None:
+       print(f"Prior predictive 90% coverage: {ppc['coverage_90']}")
+       for note in ppc.get("notes", []):
+           print(f"  ! {note}")
+   cal = metrics.get("calibration", {})
+   print("Calibration: " + (
+       f"{cal.get('n_tests')} lift test(s) on {cal.get('channels')}"
+       if cal.get("applied") else f"none — {cal.get('reason','')}"))
+   print(f"Model: {metrics.get('model_path')}")
    EOF
    ```
    Replace `QUICK_OR_FINAL` with the user's choice.
@@ -50,7 +60,14 @@ Run the full fit pipeline: prior predictive check → MCMC sampling → posterio
    - Read and display `./mmm-workspace/runs/<run-id>/metrics.json`
    - Run `/mmm-diagnose` automatically (or tell the user to run it)
 
-5. If fit fails, check for common issues:
-   - Divergences during sampling → suggest widening priors
-   - Low ESS → suggest increasing draws or target_accept
-   - Memory errors → suggest fewer chains
+5. If the fit fails or warns:
+   - **Divergences** → raise `target_accept`; if they persist the geometry is the problem,
+     usually a channel with almost no spend variation. That is a specification fix.
+   - **Low ESS** → more draws.
+   - **Memory** → fewer chains, or fewer geos while validating the pipeline.
+   - **`ValueError: cannot write NetCDF files`** → `pip install h5netcdf`. The model fitted
+     fine; only the save failed.
+
+6. Report the prior predictive result even when the fit succeeds. Coverage below ~0.8 means
+   the priors assign little probability to what actually happened; a band more than ~10x
+   the data range means they are so vague the sampler will waste its time.
