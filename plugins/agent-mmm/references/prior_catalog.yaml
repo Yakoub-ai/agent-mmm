@@ -1,80 +1,403 @@
-# Prior catalog for MMM channel parameters
-# adstock_alpha: carryover decay [0, 1] — higher = longer memory
-# saturation_lam: steepness of diminishing returns — higher = steeper saturation
+# Prior catalog for MMM channel parameters.
+#
+# Keys are taxonomy keys from agent_mmm.utils.channel_classifier.CHANNEL_TYPES.
+#
+# Two parameterisations are held for carryover:
+#   halflife_weeks  — the interpretable one. "Half the effect is gone after N weeks."
+#                     Stakeholders can argue with this; nobody can argue with 0.42.
+#   alpha_mu/sigma  — the geometric-adstock decay implied by that half-life,
+#                     alpha = 0.5 ** (1 / halflife). Kept in sync by the prior engine.
+#
+# saturation_lam is the LogisticSaturation steepness in *scaled* space
+# (channel inputs are max-abs scaled to roughly [0, 1] before the transform).
+#   f(x) = 1 - exp(-lam * x)
+#   Larger lam  -> saturates earlier -> less headroom for more spend.
+#   lam = 3     -> ~95% of maximum effect at the channel's historical peak spend.
+#   lam = 1     -> still near-linear at peak spend; plenty of headroom.
+#
+# roi_prior_* are LogNormal priors on ROI, for frameworks that parameterise media
+# effects by ROI directly (Meridian's media_prior_type="roi"). They are stated as
+# a 90% range rather than mu/sigma so they can be sanity-checked by a human.
+#
+# All values are DEFAULTS FOR WEEKLY DATA and are starting points, not truth.
+# Any channel with an experiment should be calibrated to the experiment instead.
+
+meta:
+  granularity: weekly
+  scaled_space: max_abs
+  last_reviewed: "2026-08"
+
+defaults:
+  # Applied when a channel type is not listed.
+  halflife_weeks: 1.5
+  halflife_sigma_ratio: 0.5      # sigma on alpha as a fraction of the alpha->0/1 headroom
+  alpha_mu: 0.63
+  alpha_sigma: 0.15
+  lam_mu: 2.5
+  lam_sigma: 0.8
+  roi_prior_low: 0.3
+  roi_prior_high: 6.0
+  rationale: "Neutral paid-media profile: medium carryover, medium saturation."
+
+# Priors are widened when the data cannot support the default confidence.
+sparse_channel_sigma_multiplier: 1.5    # >30% zero-spend periods
+short_history_sigma_multiplier: 1.3     # fewer periods than min_obs_for_tight_priors
+always_on_sigma_multiplier: 1.4         # flat spend => weak identification, don't pretend otherwise
+min_obs_for_tight_priors: 104
 
 channel_priors:
-  sem:
+
+  # ---------------- Search ----------------
+  sem_brand:
+    halflife_weeks: 0.3
     alpha_mu: 0.10
     alpha_sigma: 0.07
+    lam_mu: 5.0
+    lam_sigma: 1.2
+    roi_prior_low: 1.0
+    roi_prior_high: 15.0
+    rationale: >-
+      Demand harvesting, not demand creation. Effect lands the same week and the
+      addressable pool is capped by how many people search the brand, so it
+      saturates almost immediately. The wide, high ROI prior reflects that the
+      *observed* return is genuinely high while the *incremental* return is
+      usually much lower — resolve that with a brand-search holdout, not a prior.
+
+  sem_generic:
+    halflife_weeks: 0.5
+    alpha_mu: 0.25
+    alpha_sigma: 0.10
     lam_mu: 4.0
     lam_sigma: 1.0
-    rationale: "Near-zero carryover (search intent immediate), steep saturation (budget limits reach)"
+    roi_prior_low: 0.5
+    roi_prior_high: 8.0
+    rationale: >-
+      Intent already exists; the ad captures it. Steep saturation because auction
+      prices rise sharply as you push for more impression share.
 
-  social:
-    alpha_mu: 0.20
-    alpha_sigma: 0.10
-    lam_mu: 3.0
-    lam_sigma: 0.8
-    rationale: "Short carryover, moderate saturation — social drives impulse"
-
-  display:
+  sem:
+    halflife_weeks: 0.5
     alpha_mu: 0.25
-    alpha_sigma: 0.12
-    lam_mu: 3.0
-    lam_sigma: 0.8
-    rationale: "Short carryover, display has awareness effect"
+    alpha_sigma: 0.10
+    lam_mu: 4.0
+    lam_sigma: 1.0
+    roi_prior_low: 0.5
+    roi_prior_high: 8.0
+    rationale: "Blended search. Split into brand and generic whenever the data allows."
 
-  youtube:
-    alpha_mu: 0.40
-    alpha_sigma: 0.15
+  shopping:
+    halflife_weeks: 0.4
+    alpha_mu: 0.18
+    alpha_sigma: 0.09
+    lam_mu: 4.5
+    lam_sigma: 1.1
+    roi_prior_low: 0.8
+    roi_prior_high: 10.0
+    rationale: "Feed-driven, price-sensitive, short-lived. Control for price or ROAS inflates."
+
+  retail_media:
+    halflife_weeks: 0.5
+    alpha_mu: 0.25
+    alpha_sigma: 0.10
+    lam_mu: 4.0
+    lam_sigma: 1.0
+    roi_prior_low: 0.5
+    roi_prior_high: 8.0
+    rationale: >-
+      On-platform ads sit next to the purchase decision, so measured returns are
+      high and heavily confounded with retailer promotions and distribution.
+
+  # ---------------- Social ----------------
+  social_prospecting:
+    halflife_weeks: 2.0
+    alpha_mu: 0.71
+    alpha_sigma: 0.13
     lam_mu: 2.5
-    lam_sigma: 0.65
-    rationale: "Medium carryover — video content has longer recall"
+    lam_sigma: 0.7
+    roi_prior_low: 0.3
+    roi_prior_high: 5.0
+    rationale: "Reaches people with no prior intent; effect accumulates over a few weeks."
+
+  social_retargeting:
+    halflife_weeks: 0.4
+    alpha_mu: 0.18
+    alpha_sigma: 0.10
+    lam_mu: 5.0
+    lam_sigma: 1.3
+    roi_prior_low: 0.2
+    roi_prior_high: 4.0
+    rationale: >-
+      Targets people who already engaged, so observational credit is structurally
+      overstated. The deliberately modest ROI prior is a guardrail, not a belief —
+      replace it with a holdout result as soon as one exists.
 
   meta:
-    alpha_mu: 0.30
-    alpha_sigma: 0.12
+    halflife_weeks: 1.5
+    alpha_mu: 0.63
+    alpha_sigma: 0.13
     lam_mu: 3.0
     lam_sigma: 0.8
-    rationale: "Short-medium carryover; Meta combines social + display characteristics"
+    roi_prior_low: 0.4
+    roi_prior_high: 6.0
+    rationale: "Mixed prospecting/retargeting delivery. Combine FB and IG unless flighted apart."
 
-  audio:
-    alpha_mu: 0.45
+  tiktok:
+    halflife_weeks: 1.5
+    alpha_mu: 0.63
     alpha_sigma: 0.15
-    lam_mu: 2.0
-    lam_sigma: 0.55
-    rationale: "Medium carryover — audio creates lingering brand recall"
+    lam_mu: 2.8
+    lam_sigma: 0.8
+    roi_prior_low: 0.3
+    roi_prior_high: 6.0
+    rationale: "Short-form video: fast creative wear-out, so widen priors if spend is flat."
 
-  ooh:
-    alpha_mu: 0.60
-    alpha_sigma: 0.20
+  social:
+    halflife_weeks: 1.5
+    alpha_mu: 0.63
+    alpha_sigma: 0.13
+    lam_mu: 3.0
+    lam_sigma: 0.8
+    roi_prior_low: 0.3
+    roi_prior_high: 6.0
+    rationale: "Generic paid social."
+
+  # ---------------- Video ----------------
+  youtube:
+    halflife_weeks: 2.5
+    alpha_mu: 0.76
+    alpha_sigma: 0.11
     lam_mu: 2.0
-    lam_sigma: 0.55
-    rationale: "Long carryover — OOH builds reach through repeated physical exposure"
+    lam_sigma: 0.6
+    roi_prior_low: 0.2
+    roi_prior_high: 4.0
+    rationale: >-
+      Broad-reach video. Slow saturation because the addressable audience is large.
+      Model on reach/impressions rather than spend when the columns exist.
+
+  ctv:
+    halflife_weeks: 3.0
+    alpha_mu: 0.79
+    alpha_sigma: 0.11
+    lam_mu: 1.8
+    lam_sigma: 0.6
+    roi_prior_low: 0.2
+    roi_prior_high: 4.0
+    rationale: "Lean-back viewing, TV-like carryover with digital-like targeting."
 
   tv:
-    alpha_mu: 0.65
-    alpha_sigma: 0.20
+    halflife_weeks: 3.5
+    alpha_mu: 0.82
+    alpha_sigma: 0.10
     lam_mu: 1.5
-    lam_sigma: 0.45
-    rationale: "Longest carryover, gradual saturation — TV builds reach slowly"
+    lam_sigma: 0.5
+    roi_prior_low: 0.2
+    roi_prior_high: 4.0
+    default_adstock: delayed
+    rationale: >-
+      Longest carryover of any channel and a delayed peak (response builds over
+      1-2 weeks after airing), which is why a delayed/Weibull adstock beats a
+      geometric one here. Slow saturation: national TV rarely runs out of audience.
+
+  cinema:
+    halflife_weeks: 3.0
+    alpha_mu: 0.79
+    alpha_sigma: 0.12
+    lam_mu: 1.5
+    lam_sigma: 0.5
+    default_adstock: delayed
+    roi_prior_low: 0.1
+    roi_prior_high: 3.0
+    rationale: "Low frequency, high attention, long tail."
+
+  # ---------------- Display ----------------
+  display:
+    halflife_weeks: 1.5
+    alpha_mu: 0.63
+    alpha_sigma: 0.15
+    lam_mu: 2.5
+    lam_sigma: 0.8
+    roi_prior_low: 0.2
+    roi_prior_high: 4.0
+    rationale: "Low-attention awareness. Use viewable impressions if available."
+
+  native:
+    halflife_weeks: 1.0
+    alpha_mu: 0.50
+    alpha_sigma: 0.15
+    lam_mu: 3.0
+    lam_sigma: 0.9
+    roi_prior_low: 0.2
+    roi_prior_high: 4.0
+    rationale: "Content discovery; click-driven but low intent."
+
+  # ---------------- Audio ----------------
+  audio:
+    halflife_weeks: 2.0
+    alpha_mu: 0.71
+    alpha_sigma: 0.13
+    lam_mu: 2.0
+    lam_sigma: 0.6
+    roi_prior_low: 0.2
+    roi_prior_high: 4.0
+    rationale: "Attention is partial but repeated; effect accumulates."
+
+  radio:
+    halflife_weeks: 2.5
+    alpha_mu: 0.76
+    alpha_sigma: 0.12
+    lam_mu: 1.8
+    lam_sigma: 0.6
+    default_adstock: delayed
+    roi_prior_low: 0.2
+    roi_prior_high: 4.0
+    rationale: "High frequency, low per-exposure impact, long accumulation."
+
+  # ---------------- OOH & print ----------------
+  ooh:
+    halflife_weeks: 4.0
+    alpha_mu: 0.84
+    alpha_sigma: 0.09
+    lam_mu: 1.5
+    lam_sigma: 0.5
+    default_adstock: delayed
+    roi_prior_low: 0.1
+    roi_prior_high: 3.0
+    rationale: >-
+      Repeated passive exposure over a fixed 2-week buying cycle. The step-shaped
+      spend pattern is easy to confuse with seasonality — check the correlation
+      with your Fourier terms before trusting the estimate.
 
   print:
-    alpha_mu: 0.50
-    alpha_sigma: 0.17
-    lam_mu: 2.0
-    lam_sigma: 0.55
-    rationale: "Medium-long carryover"
-
-  digital_display:
-    alpha_mu: 0.25
+    halflife_weeks: 3.0
+    alpha_mu: 0.79
     alpha_sigma: 0.12
+    lam_mu: 1.8
+    lam_sigma: 0.6
+    default_adstock: delayed
+    roi_prior_low: 0.1
+    roi_prior_high: 3.0
+    rationale: "Publication date != exposure date; readership decays over the issue period."
+
+  direct_mail:
+    halflife_weeks: 2.0
+    alpha_mu: 0.71
+    alpha_sigma: 0.13
     lam_mu: 3.0
+    lam_sigma: 0.9
+    default_adstock: delayed
+    roi_prior_low: 0.3
+    roi_prior_high: 6.0
+    rationale: "Delivery lags the send date by days to weeks — the delayed peak is real."
+
+  # ---------------- Partner ----------------
+  affiliate:
+    halflife_weeks: 0.3
+    alpha_mu: 0.10
+    alpha_sigma: 0.07
+    lam_mu: 5.0
+    lam_sigma: 1.3
+    roi_prior_low: 0.2
+    roi_prior_high: 5.0
+    rationale: >-
+      Commission is paid on the last click, so a large share of measured value is
+      cannibalised organic and brand search. Expect low incrementality.
+
+  influencer:
+    halflife_weeks: 1.5
+    alpha_mu: 0.63
+    alpha_sigma: 0.18
+    lam_mu: 3.0
+    lam_sigma: 1.0
+    roi_prior_low: 0.2
+    roi_prior_high: 6.0
+    rationale: "Lumpy and often mis-dated. Align spend to post dates before modelling."
+
+  sponsorship:
+    halflife_weeks: 4.0
+    alpha_mu: 0.84
+    alpha_sigma: 0.12
+    lam_mu: 1.5
+    lam_sigma: 0.5
+    default_adstock: delayed
+    roi_prior_low: 0.1
+    roi_prior_high: 3.0
+    rationale: >-
+      Accrued spend is flat and unrelated to exposure. Model event dates or
+      broadcast reach instead; flat accrual is unidentifiable.
+
+  # ---------------- Owned / organic (no spend => no ROAS) ----------------
+  email:
+    halflife_weeks: 0.5
+    alpha_mu: 0.25
+    alpha_sigma: 0.10
+    lam_mu: 4.0
+    lam_sigma: 1.2
+    role: organic_media
+    rationale: >-
+      Model sends or delivered volume, not "spend". There is no media cost, so
+      there is no ROAS — report incremental units per thousand sends instead.
+
+  organic_social:
+    halflife_weeks: 1.5
+    alpha_mu: 0.63
+    alpha_sigma: 0.15
+    lam_mu: 2.5
     lam_sigma: 0.8
-    rationale: "Fallback for unclassified digital channels"
+    role: organic_media
+    rationale: "Owned reach; correlated with paid social delivery on the same platform."
 
-# Widening factors for sparse channels (>30% zero-spend weeks)
-sparse_channel_sigma_multiplier: 1.5
+  organic_search:
+    halflife_weeks: 2.0
+    alpha_mu: 0.71
+    alpha_sigma: 0.15
+    lam_mu: 2.0
+    lam_sigma: 0.7
+    role: organic_media
+    rationale: >-
+      Endogenous with both paid search and brand strength. Usually belongs as a
+      mediator or control, not a channel — including it as a channel invites the
+      model to credit marketing's own downstream effect twice.
 
-# Minimum number of observations to use tight priors
-min_obs_for_tight_priors: 52
+  pr:
+    halflife_weeks: 2.0
+    alpha_mu: 0.71
+    alpha_sigma: 0.18
+    lam_mu: 2.0
+    lam_sigma: 0.7
+    role: organic_media
+    rationale: "Earned coverage; bursty and hard to identify without event dating."
+
+  app_push:
+    halflife_weeks: 0.3
+    alpha_mu: 0.10
+    alpha_sigma: 0.08
+    lam_mu: 5.0
+    lam_sigma: 1.4
+    role: organic_media
+    rationale: "Immediate and quickly saturating; also fatigues the audience."
+
+  # ---------------- Non-media treatments (no adstock, no saturation) -------
+  price:
+    halflife_weeks: 0.0
+    alpha_mu: 0.0
+    alpha_sigma: 0.0
+    lam_mu: 0.0
+    lam_sigma: 0.0
+    role: non_media_treatment
+    expected_sign: negative
+    rationale: >-
+      Enters linearly (or in logs for a constant elasticity). Never adstocked,
+      never saturated, never optimised as budget. Leaving price out is the most
+      common cause of over-stated media ROAS in retail and CPG.
+
+  distribution:
+    halflife_weeks: 0.0
+    alpha_mu: 0.0
+    alpha_sigma: 0.0
+    lam_mu: 0.0
+    lam_sigma: 0.0
+    role: non_media_treatment
+    expected_sign: positive
+    rationale: >-
+      ACV, store count, stock availability. Moves sales on its own and correlates
+      with media plans, so omitting it pushes distribution's effect onto media.
