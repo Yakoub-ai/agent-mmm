@@ -33,7 +33,7 @@ description: |
 
 ## Brownfield Strategy
 
-1. Load existing `idata.nc` → extract posterior summary stats (mean, std per parameter)
+1. Load the existing `model.nc` (an `xarray.DataTree` in pymc-marketing 1.x) and extract posterior summary stats
 2. Use posterior mean as new prior mu, `posterior_std * 0.7` as new sigma (tightening factor)
 3. Apply moment-matching to convert (mu, sigma) back to distribution parameters
 4. This is also what `/mmm-improve` does in the posterior-informed refinement step
@@ -45,7 +45,7 @@ description: |
 from agent_mmm.iter_loop import tighten_priors_from_posterior
 import arviz as az
 
-idata = az.from_netcdf("mmm-workspace/runs/best-run/idata.nc")
+idata = az.from_netcdf("mmm-workspace/runs/best-run/model.nc")
 posterior_stats = {
     var: {"mean": float(idata.posterior[var].mean()), "std": float(idata.posterior[var].std())}
     for var in ["adstock_alpha", "saturation_lam"]

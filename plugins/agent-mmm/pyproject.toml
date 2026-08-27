@@ -1,27 +1,49 @@
 [build-system]
 requires = ["setuptools>=68"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-mmm"
-version = "0.1.0"
-requires-python = ">=3.11"
+version = "0.2.0"
+description = "Framework-agnostic Marketing Mix Model tooling for the agent-mmm Claude Code plugin"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
 dependencies = [
-    "pymc-marketing>=0.19.1",
-    "pymc-extras",
-    "arviz",
-    "xarray",
+    # Core, framework-independent.
     "numpy",
     "pandas",
     "scipy",
+    "statsmodels",
     "pydantic>=2",
     "pyyaml",
-    "statsmodels",
     "holidays",
+    "xarray",
 ]
 
 [project.optional-dependencies]
+# The pymc-marketing backend is the only one that executes in-process.
+# 1.0 was a breaking release: the multidimensional MMM became THE MMM, the
+# legacy MMM class was removed, and inference data is now an xarray DataTree.
+pymc = [
+    "pymc-marketing>=1.0,<2.0",
+    "pymc-extras>=0.14",
+    "arviz>=1.2",
+    "h5netcdf",           # DataTree.to_netcdf has no writer without this
+]
+# Meridian and Robyn are code-generation targets; install them in the
+# environment where you actually run the generated code.
+meridian = ["google-meridian>=1.8"]
+parquet = ["pyarrow"]
 dev = ["pytest>=8", "pytest-cov"]
+all = ["agent-mmm[pymc,parquet,dev]"]
 
 [tool.setuptools.packages.find]
 where = ["lib"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: runs MCMC sampling; excluded from the default run",
+    "requires_pymc: needs pymc-marketing installed",
+]

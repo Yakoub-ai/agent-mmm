@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 
 from agent_mmm.spec import MMMSpec, TargetUnit, TargetUnitKind, ChannelMeta, ControlMeta
 from agent_mmm.model_factory import (
-    build_model_config_priors, prepare_data, _dict_to_prior, _load_model_config_from_file
+    build_model_config_priors, compile_spec, prepare_data, _dict_to_prior
 )
 
 DATA_DIR = Path(__file__).parent / "data"
@@ -90,10 +90,7 @@ def test_build_model_config_priors_skips_metadata():
 
 def test_build_mmm_constructs_without_error():
     """Integration test: build MMM from spec + minimal model_config."""
-    try:
-        from pymc_marketing.mmm.multidimensional import MMM
-    except ImportError:
-        pytest.skip("pymc-marketing not installed")
+    pytest.importorskip("pymc_marketing")
 
     spec = _make_spec()
     # Minimal model_config dict

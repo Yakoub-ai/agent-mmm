@@ -1,51 +1,63 @@
 # Yakoub AI Plugins — Claude Code Marketplace
 
-A Claude Code plugin marketplace with production-ready AI agents, skills, and tools.
+A Claude Code plugin marketplace for data science and marketing analytics.
 
 ## Plugins
 
-### [agent-mmm](./plugins/agent-mmm/) — Marketing Mix Model Framework
+### [agent-mmm](./plugins/agent-mmm/) — Marketing Mix Model framework
 
-A complete MMM framework built on pymc-marketing v0.19.1+. Goes from raw CSV to stakeholder-ready reports with automated data auditing, Bayesian prior recommendation, iterative model improvement, and four stakeholder report formats.
+Expert MMM knowledge plus an executable pipeline: a framework-agnostic project spec, data
+preparation and auditing, causal specification, prior generation, model fitting,
+diagnostics, and stakeholder reporting.
 
-**Agents**: `agent-mmm` (orchestrator), `mmm-modeler`, `mmm-diagnostician`, `mmm-improver`, `mmm-reporter`
+Works across **pymc-marketing 1.1**, **Google Meridian 1.8** and **Meta Robyn 3.12** —
+pymc-marketing runs in-process, the others are generated as runnable code with their data
+contracts, and the plugin reports what each framework cannot express rather than dropping
+it silently.
 
-**Commands**: `/mmm-intake`, `/mmm-intake-quick`, `/mmm-analyze-data`, `/mmm-recommend-controls`, `/mmm-recommend-priors`, `/mmm-build`, `/mmm-fit`, `/mmm-diagnose`, `/mmm-improve`, `/mmm-report`, `/mmm-status`
+The knowledge is organised around the things that actually make MMMs wrong: variable roles
+(a price index is not a media channel and email has no ROAS), baseline health (a negative
+baseline invalidates every ROAS below it), identifiability (collinear channels cannot be
+separated, whatever the model reports), and calibration (an MMM without an experiment is an
+argument from correlation).
 
-**Skills**: data quality, model building, diagnostics, attribution, budget optimization, API reference, intake questionnaire, GF/BF guide, external factors catalog, iterative improvement, stakeholder reporting, target units, multi-geo panel
+**Agents** — `agent-mmm`, `mmm-modeler`, `mmm-diagnostician`, `mmm-improver`, `mmm-reporter`
+
+**Commands** — `/mmm-intake`, `/mmm-intake-quick`, `/mmm-prepare-data`, `/mmm-analyze-data`,
+`/mmm-recommend-controls`, `/mmm-recommend-priors`, `/mmm-build`, `/mmm-fit`,
+`/mmm-diagnose`, `/mmm-improve`, `/mmm-report`, `/mmm-status`
+
+**Skills** — project planning, intake, data engineering, data quality, channel semantics,
+causal design, baseline and trend, model building, experimentation and calibration,
+validation, diagnostics, attribution, budget optimisation, multi-geo panels, target units,
+stakeholder reporting, iterative improvement, greenfield vs brownfield, external factors,
+and reference guides for pymc-marketing, Meridian, Robyn and framework selection.
 
 ## Installation
 
-### Method 1 — Interactive (recommended)
+### Interactive (recommended)
 
-1. Open Claude Code and type `/plugins`
-2. Go to the **Marketplaces** tab → **+ Add Marketplace**
-3. Enter: `https://github.com/Yakoub-ai/agent-mmm`
-4. Go to **Discover** → find **agent-mmm** → **Install for you (user scope)**
+1. In Claude Code, run `/plugins`
+2. **Marketplaces** → **+ Add Marketplace**
+3. Enter `https://github.com/Yakoub-ai/agent-mmm`
+4. **Discover** → **agent-mmm** → **Install**
 5. Restart Claude Code
 
-### Method 2 — Project-level (for teams)
-
-Add to your project's `.claude/settings.json`:
+### Project-level
 
 ```json
 {
   "extraKnownMarketplaces": {
     "yakoub-ai-plugins": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/Yakoub-ai/agent-mmm"
-      }
+      "source": { "source": "git", "url": "https://github.com/Yakoub-ai/agent-mmm" }
     }
   },
-  "enabledPlugins": {
-    "agent-mmm@yakoub-ai-plugins": true
-  }
+  "enabledPlugins": { "agent-mmm@yakoub-ai-plugins": true }
 }
 ```
 
 ## Requirements
 
 - Claude Code with plugin support
-- Python 3.11+ (for agent-mmm library)
-- `pymc-marketing >= 0.19.1`
+- Python 3.12+ for the `agent_mmm` library
+- `pip install -e "plugins/agent-mmm[pymc]"` for the executable pymc-marketing backend

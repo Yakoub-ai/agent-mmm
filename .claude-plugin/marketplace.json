@@ -9,12 +9,22 @@
   "plugins": [
     {
       "name": "agent-mmm",
-      "description": "Marketing Mix Model expert agent and skills for pymc-marketing v0.18.2+. Covers data quality, model building, diagnostics, attribution, ROAS, and budget optimization.",
+      "description": "Marketing Mix Model expert agent, skills and pipeline. Covers planning, data engineering and auditing, causal specification, channel semantics, baseline health, priors, fitting, diagnostics, validation, experimentation and calibration, attribution and budget optimisation. Executable on pymc-marketing 1.x; generates code for Google Meridian 1.8 and Meta Robyn 3.12.",
       "author": {
         "name": "George"
       },
       "source": "./plugins/agent-mmm",
-      "category": "development"
+      "category": "data-science",
+      "keywords": [
+        "mmm",
+        "marketing-mix-model",
+        "bayesian",
+        "pymc-marketing",
+        "meridian",
+        "robyn",
+        "attribution",
+        "incrementality"
+      ]
     }
   ]
 }

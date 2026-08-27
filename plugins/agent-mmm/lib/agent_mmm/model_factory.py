@@ -1,136 +1,82 @@
-"""Builds a pymc-marketing MMM from a MMMSpec + model_config dict."""
+"""Model construction — a thin façade over the backend layer.
+
+Kept as a stable entry point (`build_mmm`, `prepare_data`) while the actual
+translation lives in :mod:`agent_mmm.backends`, so a spec targeting Meridian or
+Robyn goes through exactly the same call path as a pymc-marketing one.
+"""
 from __future__ import annotations
+
 import json
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pandas as pd
 
-from agent_mmm.spec import MMMSpec, MMMType
-from agent_mmm.utils.io import load_data, parse_dates
+from agent_mmm.backends import get_backend
+from agent_mmm.backends.base import TranslationResult
+from agent_mmm.backends.pymc_backend import (  # re-exported for backwards compatibility
+    _dict_to_prior,
+    build_model_config_priors,
+    prepare_data,
+)
+from agent_mmm.spec import MMMSpec
+
+__all__ = [
+    "build_mmm",
+    "compile_spec",
+    "prepare_data",
+    "build_model_config_priors",
+    "_dict_to_prior",
+    "load_priors",
+]
 
 
-def _load_model_config_from_file(path: str | Path) -> dict:
-    """Load model_config.json written by prior_engine."""
+def load_priors(path: str | Path) -> dict:
+    """Load the payload written by :func:`agent_mmm.prior_engine.recommend_priors`."""
     with open(path) as f:
         return json.load(f)
 
 
-def _dict_to_prior(d: dict) -> Any:
-    """Convert a plain dict (from model_config.json) to a pymc_extras Prior object.
-
-    Handles nested priors (e.g. likelihood.sigma as sub-prior).
-    """
-    from pymc_extras.prior import Prior
-    dist = d["distribution"]
-    kwargs = {k: v for k, v in d.items() if k not in ("distribution", "dims")}
-    dims = d.get("dims")
-
-    # Convert list values to np.array for vector params
-    for key, val in kwargs.items():
-        if isinstance(val, list):
-            kwargs[key] = np.array(val)
-        elif isinstance(val, dict) and "distribution" in val:
-            kwargs[key] = _dict_to_prior(val)
-
-    if dims:
-        return Prior(dist, dims=dims, **kwargs)
-    return Prior(dist, **kwargs)
-
-
-def build_model_config_priors(model_config_dict: dict) -> dict:
-    """Convert a model_config JSON dict to pymc_extras Prior objects for MMM constructor.
-
-    Skips metadata keys (starting with '_').
-    """
-    result = {}
-    skip_keys = {k for k in model_config_dict if k.startswith("_")}
-    for key, value in model_config_dict.items():
-        if key in skip_keys:
-            continue
-        if isinstance(value, dict) and "distribution" in value:
-            result[key] = _dict_to_prior(value)
-        # else: skip non-prior metadata fields
-    return result
-
-
-def prepare_data(
+def compile_spec(
     spec: MMMSpec,
+    priors: dict | None = None,
+    priors_path: str | Path | None = None,
+    build: bool = True,
     df: pd.DataFrame | None = None,
-) -> tuple[pd.DataFrame, pd.Series]:
-    """Load and prepare X (features) and y (target) from spec.
+) -> TranslationResult:
+    """Translate a spec into its target framework.
 
-    Returns (X, y_series) where:
-    - X contains date + channel + control columns
-    - y_series is a named Series with name == spec.target_column
+    For pymc-marketing this returns a built (unfitted) model alongside the code;
+    for Meridian and Robyn it returns runnable code plus the data contract the
+    framework requires. In every case ``result.unsupported`` lists spec features
+    the target framework cannot express — read it before running anything.
     """
-    if df is None:
-        df = load_data(spec.data_path)
-        df = parse_dates(df, spec.date_column)
-
-    channel_cols = spec.channel_columns()
-    control_cols = spec.control_columns()
-    all_feature_cols = [spec.date_column] + channel_cols + control_cols
-
-    X = df[[c for c in all_feature_cols if c in df.columns]].copy()
-    y = df[spec.target_column].copy()
-    y_series = pd.Series(y.values, name=spec.target_column)
-
-    return X, y_series
+    if priors is None and priors_path is not None:
+        priors = load_priors(priors_path)
+    backend = get_backend(spec.framework)
+    return backend.translate(spec, priors=priors, build=build, df=df)
 
 
 def build_mmm(
     spec: MMMSpec,
     model_config_dict: dict | None = None,
     model_config_path: str | Path | None = None,
+    priors: dict | None = None,
+    df: pd.DataFrame | None = None,
 ) -> Any:
-    """Build a pymc-marketing MMM object from spec + model_config.
+    """Build an unfitted pymc-marketing ``MMM`` from a spec.
 
-    Exactly one of model_config_dict or model_config_path must be provided.
-    For brownfield, still builds a fresh MMM (InferenceData warm-start applied at fit time).
-
-    Returns: MMM instance (not yet fitted).
+    ``model_config_dict`` / ``model_config_path`` are accepted for backwards
+    compatibility and are treated as the ``model_config`` section of a prior
+    payload.
     """
-    from pymc_marketing.mmm.multidimensional import MMM
-    from pymc_marketing.mmm import GeometricAdstock, DelayedAdstock, LogisticSaturation
+    if priors is None:
+        if model_config_dict is not None:
+            priors = {"model_config": model_config_dict}
+        elif model_config_path is not None:
+            raw = load_priors(model_config_path)
+            priors = raw if "model_config" in raw else {"model_config": raw}
 
-    if model_config_dict is None and model_config_path is not None:
-        raw = _load_model_config_from_file(model_config_path)
-        model_config_dict = raw.get("model_config", raw)
-    if model_config_dict is None:
-        raise ValueError("Provide either model_config_dict or model_config_path")
+    from agent_mmm.backends.pymc_backend import PyMCMarketingBackend
 
-    model_config = build_model_config_priors(model_config_dict)
-
-    channel_cols = spec.channel_columns()
-    control_cols = spec.control_columns()
-
-    # Adstock selection heuristic: use Delayed if any offline channel
-    from agent_mmm.utils.channel_classifier import classify_channel
-    offline_types = {"tv", "ooh", "print", "audio"}
-    has_offline = any(classify_channel(c) in offline_types for c in channel_cols)
-    if has_offline:
-        adstock = DelayedAdstock(l_max=12)
-    else:
-        adstock = GeometricAdstock(l_max=8)
-
-    kwargs: dict = dict(
-        date_column=spec.date_column,
-        channel_columns=channel_cols,
-        target_column=spec.target_column,
-        adstock=adstock,
-        saturation=LogisticSaturation(),
-        yearly_seasonality=spec.seasonality.yearly_fourier_modes,
-        model_config=model_config,
-        adstock_first=True,
-    )
-
-    if control_cols:
-        kwargs["control_columns"] = control_cols
-
-    # Multi-geo dims (placeholder — multidimensional API uses coords at fit time)
-    if spec.geo.is_panel and spec.geo.geo_column:
-        kwargs["dims"] = spec.geo.geo_column
-
-    return MMM(**kwargs)
+    return PyMCMarketingBackend().build(spec, priors=priors, df=df)

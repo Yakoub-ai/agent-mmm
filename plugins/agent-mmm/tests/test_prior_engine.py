@@ -22,7 +22,8 @@ def test_classify_sem():
 
 def test_classify_social():
     assert classify_channel("spend_social") == "social"
-    assert classify_channel("facebook_cost") == "social"
+    # "facebook" is more specific than "social", so it resolves to the Meta type.
+    assert classify_channel("facebook_cost") == "meta"
 
 
 def test_classify_meta_over_social():
@@ -46,7 +47,7 @@ def test_classify_youtube():
 
 def test_classify_unknown_falls_back():
     result = classify_channel("channel_xyz_unknown")
-    assert result == "digital_display"
+    assert result == "display"
 
 
 def test_classify_channels_dict():
@@ -124,7 +125,8 @@ def test_prior_engine_sem_has_low_alpha_mu(tmp_path):
     result = recommend_priors(spec, base=str(tmp_path))
     ch = result["per_channel_audit"][0]
     assert ch["channel_type"] == "sem"
-    assert ch["alpha_mu"] < 0.25, "SEM should have low carryover"
+    # Search converts within the period; half-life 0.5 weeks -> alpha 0.25.
+    assert ch["alpha_mu"] <= 0.30, "SEM should have low carryover"
 
 
 def test_prior_engine_tv_has_high_alpha_mu(tmp_path):

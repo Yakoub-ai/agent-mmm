@@ -6,6 +6,29 @@ description: |
 
 # MMM Stakeholder Reporting
 
+## Before any framing decision
+
+Seven things hold regardless of audience. They are the difference between a report that
+survives scrutiny and one that gets picked apart in the room.
+
+1. **Read the baseline first.** Negative, below ~30%, or above ~95% of the target means the
+   decomposition is broken and no channel number is reportable. Say that rather than
+   reporting them anyway.
+2. **Use counterfactual incrementality** (`mmm.incrementality.contribution_over_spend`),
+   not contribution ÷ spend. It respects the link function and counts carryover outside the
+   window.
+3. **Organic channels have no ROAS.** No spend, no denominator. Report incremental units
+   per thousand sends.
+4. **Average ROAS is not marginal ROAS.** Every budget recommendation is a marginal
+   question, and marginal is always lower on a concave curve.
+5. **Every figure carries a range.** `P(ROAS > 1)` is often more useful than a point
+   estimate, because it answers the decision directly.
+6. **Separate measured from inferred.** Calibrated channels deserve more confidence in the
+   deck than channels the model inferred from historical variation.
+7. **MMM ROAS is incremental** and is not comparable to a platform's last-click ROAS. Say
+   why before someone else asks.
+
+
 ## Report Philosophy
 
 Each audience needs different content at different abstraction levels. The same underlying model produces four different documents.
