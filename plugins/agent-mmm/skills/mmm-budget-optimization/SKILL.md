@@ -1,234 +1,247 @@
 ---
 name: mmm-budget-optimization
 description: |
-  Budget allocation optimization and sensitivity analysis for Marketing Mix Models. Use when optimizing media budget allocation, setting up BudgetOptimizer with CustomModelWrapper, defining budget bounds and constraints, running sensitivity analysis, comparing current vs. optimal allocation, or advising on budget reallocation strategies. Also activate when the user asks about optimal spend, budget constraints, or allocation scenarios.
+  Budget allocation and scenario analysis from a fitted MMM. Use when optimising spend across channels, setting bounds and constraints, running sensitivity or what-if scenarios, comparing current versus optimal allocation, choosing between fixed-budget and target-return scenarios, or judging whether an optimiser's recommendation is safe to act on. Covers pymc-marketing 1.x mmm.budget_optimizer, Meridian's optimizer and Robyn's allocator.
 ---
 
-# MMM Budget Optimization
+# Budget Optimisation
 
-## Primary API: MultiDimensionalBudgetOptimizerWrapper (0.19.1+)
+The optimiser is the sharpest instrument in the toolkit and the easiest to misuse. It will
+answer whatever question you pose, including questions the model has no information about
+— and it is most confident exactly where it knows least, because the extrapolated part of
+a saturation curve is smooth and well-behaved.
 
-The multidimensional MMM does **NOT** have `model.optimize_budget()`. Use `MultiDimensionalBudgetOptimizerWrapper`:
+Everything below is about posing the question so the answer is usable.
+
+---
+
+## 1. The principle
+
+Optimal allocation **equalises marginal return across channels**, subject to constraints.
+It does not rank channels by average ROAS. On a concave curve, moving budget into a
+high-average-ROAS channel that is already saturated destroys value, and average ROAS
+cannot tell you that.
+
+Two questions, two scenarios:
+
+| Question | Scenario |
+|---|---|
+| "Reallocate our existing £10m" | Fixed budget — maximise response |
+| "How much *should* we spend?" | Flexible budget to a target return |
+
+The second is the more valuable question and the one most teams never ask. If marginal
+ROAS exceeds 1.0 at current spend across several channels, the answer is not "reallocate",
+it is "spend more".
+
+---
+
+## 2. pymc-marketing 1.x
 
 ```python
-import xarray as xr
-import pandas as pd
-from pymc_marketing.mmm.multidimensional import MultiDimensionalBudgetOptimizerWrapper
+opt = mmm.budget_optimizer("2026-01-05", "2026-03-30")
 
-# total_media_contribution_original_scale is added automatically during build_model
-# No need to call add_original_scale_contribution_variable() first
+result = opt.allocate_budget(
+    total_budget=1_000_000,
+    budget_bounds={
+        "tv_grps":      (150_000, 400_000),
+        "sem_spend":    ( 80_000, 250_000),
+        "social_spend": ( 50_000, 300_000),
+    },
+)   # -> BudgetOptimizationResult   (a tuple in earlier versions; changed in 1.1)
+```
 
-start_date = pd.to_datetime(X["date"].min()).strftime("%Y-%m-%d")
-end_date = pd.to_datetime(X["date"].max()).strftime("%Y-%m-%d")
-wrapper = MultiDimensionalBudgetOptimizerWrapper(
-    model=model,
-    start_date=start_date,
-    end_date=end_date,
+`mmm.budget_optimizer(start, end)` is the recommended entry point: it builds the
+optimisation model, computes `num_periods`, and pulls `adstock_periods` from the fitted
+adstock so carry-in and carry-over are handled. Constructing `BudgetOptimizer` directly
+means getting those right yourself.
+
+**The window must be at least as long as the carryover.** Optimising a 13-week window for
+a channel with a 16-week effective carryover counts only the response landing inside the
+window, which systematically under-funds long-carryover media. `mmm.effective_carryover_lags()`
+returns `l_max` plus any additional carryover declared by registered effects.
+
+For non-spend channels (impressions, GRPs), pass `cost_per_unit` so the optimiser works in
+money. Custom objectives go through `utility_function` and `set_constraints`.
+
+```python
+mmm.plot.budget_allocation()
+mmm.plot.allocated_contribution_by_channel_over_time()
+```
+
+## Meridian
+
+```python
+from meridian.analysis import optimizer
+opt = optimizer.BudgetOptimizer(mmm)
+
+fixed = opt.optimize(fixed_budget=True, budget=1_000_000,
+                     spend_constraint_lower=0.3, spend_constraint_upper=0.3,
+                     use_optimal_frequency=True)
+
+flexible = opt.optimize(fixed_budget=False, target_roi=1.5)
+
+fixed.output_optimization_summary("optimization.html", ".")
+```
+
+Meridian's constraints are relative (±30% of current spend by default), which is a
+sensible default for a plan people have to execute. `use_optimal_frequency=True` also
+optimises frequency for RF channels — a lever no other framework exposes.
+
+## Robyn
+
+```r
+AllocatorCollect <- robyn_allocator(
+  InputCollect = InputCollect, OutputCollect = OutputCollect,
+  select_model = select_model,
+  scenario = "max_response",        # or "target_efficiency"
+  total_budget = 1000000, date_range = "last_12",
+  channel_constr_low = 0.7, channel_constr_up = 1.5,
+  constr_mode = "eq"                # "ineq" allows underspending
 )
+```
 
-# Budget bounds as xr.DataArray — dims=["channel", "bound"], bound coords = ["lower", "upper"]
-current_alloc = {ch: float(X[ch].sum()) for ch in channel_columns}
-total_budget = sum(current_alloc.values())
-budget_bounds = xr.DataArray(
-    data=[[v * 0.5, v * 1.5] for v in current_alloc.values()],
-    dims=["channel", "bound"],
-    coords={"channel": list(current_alloc.keys()), "bound": ["lower", "upper"]},
+Robyn's allocator is fast and its plots are the best of the three for a marketing
+audience. `constr_mode = "ineq"` is worth using when the honest answer might be "spend
+less".
+
+---
+
+## 3. Bounds are the most important input
+
+An unbounded optimiser will recommend zero for some channels and a tenfold increase for
+others, because nothing in the mathematics prevents it. Bounds encode what is executable
+and where the model has evidence.
+
+**Set bounds from three considerations, and take the tightest:**
+
+1. **Evidence.** Do not let the optimiser go beyond the observed spend range by more than
+   ~50%. Outside that range the curve is the prior's shape, not a finding.
+2. **Executability.** Media cannot triple overnight. Inventory is finite, contracts exist,
+   teams have capacity. TV upfronts are committed months ahead; OOH is bought in fixed
+   cycles.
+3. **Risk.** Cutting a channel to zero loses the option to learn about it, and often loses
+   rate cards and partnerships that are expensive to rebuild.
+
+A practical default is ±30% of current spend, widened for channels with strong evidence
+and narrowed for channels with wide intervals.
+
+**Never allow zero unless zero is genuinely on the table.** The saturation curve near the
+origin is almost always extrapolation, especially for always-on channels, and a
+recommendation to switch a channel off is the one most likely to be executed
+irreversibly.
+
+---
+
+## 4. Constraints beyond bounds
+
+Real plans carry structure the optimiser needs to be told about:
+
+* **Minimum viable spend.** Below a threshold a channel cannot buy meaningful reach.
+* **Committed spend.** Upfronts, sponsorships, contracted OOH.
+* **Portfolio rules.** "At least 40% upper-funnel", "brand cannot fall below x".
+* **Group budgets.** Total digital, total offline.
+* **Frequency caps.** Meridian only.
+
+pymc-marketing: `opt.set_constraints([...])`. Meridian: per-channel spend constraints.
+Robyn: `channel_constr_low` / `channel_constr_up` per channel.
+
+---
+
+## 5. Optimising with uncertainty
+
+The optimiser typically works on the posterior mean response surface, which throws away
+exactly the information that should make you cautious. Two ways to put it back:
+
+**Optimise per draw.** Run the allocation for a sample of posterior draws and look at the
+distribution of recommended allocations. A channel whose recommended budget ranges from
+£50k to £400k across draws has not been measured well enough to optimise.
+
+**Evaluate the recommendation under uncertainty.** Take the optimal allocation and compute
+the posterior distribution of its response. Compare against the current allocation's
+distribution. If the intervals overlap substantially, the "12% uplift" headline is not
+distinguishable from noise, and the honest recommendation is a smaller move plus a test.
+
+Neither is built into the frameworks. Both are worth the effort before a plan that moves
+real money.
+
+---
+
+## 6. Sensitivity and scenarios
+
+```python
+mmm.sensitivity.run_sweep(
+    "channel_data", sweep_values=np.linspace(0.5, 1.5, 11),
+    var_names="channel_contribution", sweep_type="multiplicative",
 )
-
-# Optimize
-opt_alloc, opt_result = wrapper.optimize_budget(
-    budget=total_budget,
-    budget_bounds=budget_bounds,
-    # response_variable defaults to "total_media_contribution_original_scale"
-)
-
-# Extract per-channel optimal spend
-for ch in channel_columns:
-    print(f"{ch}: {float(opt_alloc.sel(channel=ch).values):.0f}")
+mmm.plot.sensitivity_analysis()
 ```
 
-## Bayesian Posterior CIs via sample_response_distribution
+Scenarios that earn their place in a readout:
 
-```python
-# Compare current vs optimal allocation with posterior uncertainty
-current_alloc_da = xr.DataArray(
-    [float(X[ch].mean()) for ch in channel_columns],  # weekly rates
-    dims=["channel"],
-    coords={"channel": channel_columns},
-)
-optimal_alloc_da = xr.DataArray(
-    [float(opt_alloc.sel(channel=ch).values) / len(X) for ch in channel_columns],
-    dims=["channel"],
-    coords={"channel": channel_columns},
-)
+* **Current plan** — the baseline everything is compared to.
+* **Optimal, unconstrained within evidence** — the ceiling.
+* **Optimal, constrained to executable moves** — the realistic recommendation.
+* **±20% total budget** — answers "what if finance cuts us?" before it is asked.
+* **Channel off** — for any channel under scrutiny.
+* **Marginal ROAS by channel at plan** — shows *why* the recommendation is what it is.
 
-# Returns xr.Dataset with "total_media_contribution_original_scale" and "channel_contribution"
-current_resp = wrapper.sample_response_distribution(current_alloc_da)
-optimal_resp = wrapper.sample_response_distribution(optimal_alloc_da)
+The last one is the most persuasive artefact in a budget conversation: a chart of marginal
+return at current spend explains the whole recommendation without anyone needing to trust
+the optimiser.
 
-# total_media_contribution_original_scale has dim "sample" only (already summed over date)
-current_total = current_resp["total_media_contribution_original_scale"].values.flatten()
-optimal_total = optimal_resp["total_media_contribution_original_scale"].values.flatten()
-uplift = optimal_total - current_total
+---
 
-print(f"Expected uplift: {uplift.mean():.0f} ({np.percentile(uplift, 5):.0f} to {np.percentile(uplift, 95):.0f})")
-print(f"P(positive uplift): {(uplift > 0).mean() * 100:.1f}%")
-```
+## 7. Before acting on an optimiser's output
 
-## Legacy API: BudgetOptimizer (still available, dict bounds)
+- [ ] The model passed its diagnostics — convergence, baseline, CV gap.
+- [ ] The baseline is plausible and never negative.
+- [ ] Bounds keep every channel inside, or near, its observed spend range.
+- [ ] The optimisation window is at least as long as the effective carryover.
+- [ ] The recommendation was checked under posterior uncertainty, not just at the mean.
+- [ ] Channels with wide intervals are not receiving large moves.
+- [ ] The recommendation is executable — inventory, contracts, lead times.
+- [ ] Someone who knows the media market has sanity-checked it.
+- [ ] The plan is staged, with a measurement point before the next stage.
 
-`BudgetOptimizer.allocate_budget()` still accepts dict bounds for backward compat:
+**Stage the change.** Moving 30% of a budget on a model's say-so is a bet on a model.
+Moving 10%, measuring, and then moving again is a measurement programme — and the first
+move creates exactly the spend variation the next model needs.
 
-```python
-from pymc_marketing.mmm.budget_optimizer import BudgetOptimizer, CustomModelWrapper
+---
 
-wrapper = CustomModelWrapper(base_model=model.model, idata=model.idata, channels=channel_columns)
-optimizer = BudgetOptimizer(model=wrapper, num_periods=len(X))
-opt_alloc, opt_result = optimizer.allocate_budget(
-    total_budget=total_budget,
-    budget_bounds={ch: (v * 0.5, v * 1.5) for ch, v in current_alloc.items()},
-)
-```
+## 8. Failure modes
 
-### With Custom Constraints
-```python
-from pymc_marketing.mmm.budget_optimizer import Constraint
+| Symptom | Cause |
+|---|---|
+| Recommends zero for a channel | Unbounded optimiser extrapolating below observed spend |
+| Recommends a tenfold increase | Same, in the other direction; the curve is flat there and the model does not know it |
+| Long-carryover channels are under-funded | Window shorter than `effective_carryover_lags()` |
+| Uplift looks implausibly large | Extrapolation, or a saturated channel modelled as linear |
+| Allocation swings between refreshes | The underlying model is not identified |
+| Optimiser fails to converge | Infeasible constraints, or bounds that do not admit the total budget |
+| Recommendation contradicts the media team | Sometimes the finding; more often a missing constraint they know about and the model does not |
 
-# Example: TV must be at least 20% of total budget
-def tv_min_constraint(x):
-    tv_idx = channel_columns.index("spend_TV")
-    return x[tv_idx] - 0.20 * total_budget  # >= 0
+---
 
-# For MultiDimensionalBudgetOptimizerWrapper:
-wrapper.optimize_budget(budget=total_budget, budget_bounds=budget_bounds,
-                        constraints=[Constraint(type="ineq", fun=tv_min_constraint)])
-```
+## 9. Presenting the result
 
-## Budget Bounds Strategy
+Three things, in this order:
 
-| Strategy | Bounds | When to Use |
-|----------|--------|-------------|
-| Conservative | +/- 20% | First optimization, stakeholder comfort |
-| Moderate | +/- 50% | Standard optimization |
-| Aggressive | +/- 80% | Exploratory, large budget flexibility |
-| Asymmetric | Custom per channel | Channel-specific constraints (contracts, minimums) |
+1. **The marginal return chart.** Why the recommendation exists.
+2. **The move.** Current vs recommended per channel, in money, with the constraint that
+   bound each one.
+3. **The expected gain, with its interval**, and what would falsify it.
 
-### Setting Realistic Bounds
-```python
-# Factor in practical constraints:
-budget_bounds = {}
-for ch, spend in current_alloc.items():
-    ch_name = ch.replace("spend_", "")
+And one sentence that keeps the conversation honest:
 
-    if ch_name == "TV":
-        # TV has annual contracts -- limited flexibility
-        budget_bounds[ch] = (spend * 0.85, spend * 1.15)
-    elif ch_name == "SEM":
-        # SEM is demand-driven -- can scale with demand
-        budget_bounds[ch] = (spend * 0.50, spend * 2.00)
-    else:
-        # Default moderate bounds
-        budget_bounds[ch] = (spend * 0.50, spend * 1.50)
-```
+> *This is the best allocation given what the model can see. The channels with the widest
+> ranges are the ones we have never tested; a geo holdout on [channel] would narrow the
+> single largest source of uncertainty in this plan.*
 
-## Sensitivity Analysis
+---
 
-### Budget Sensitivity Sweep
-```python
-# Test different total budget levels
-budget_levels = [total_budget * f for f in [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]]
+## Related skills
 
-results = []
-for budget in budget_levels:
-    alloc, result = optimizer.allocate_budget(
-        total_budget=budget,
-        budget_bounds=budget_bounds,
-    )
-    results.append({"total_budget": budget, "allocation": alloc, "result": result})
-```
-
-### Per-Channel Sensitivity
-```python
-# How does outcome change when one channel's spend changes?
-# Use saturation curves for this:
-sat_curve = model.sample_saturation_curve(max_value=2.0, num_points=100)
-
-# The marginal curve shows diminishing returns at different spend levels
-model.plot.marginal_curve()
-```
-
-### Visualization
-```python
-model.plot.budget_allocation()                           # Allocation comparison
-model.plot.allocated_contribution_by_channel_over_time() # Temporal allocation
-model.plot.sensitivity_analysis()                        # Sensitivity sweep
-```
-
-## Interpreting Optimization Results
-
-### Comparing Current vs. Optimal
-```python
-import pandas as pd
-
-comparison = pd.DataFrame({
-    "channel": [ch.replace("spend_", "") for ch in channel_columns],
-    "current_spend": [current_alloc[ch] for ch in channel_columns],
-    "optimal_spend": [opt_alloc[ch] for ch in channel_columns],
-})
-comparison["change_pct"] = (comparison["optimal_spend"] / comparison["current_spend"] - 1) * 100
-comparison["current_share"] = comparison["current_spend"] / comparison["current_spend"].sum()
-comparison["optimal_share"] = comparison["optimal_spend"] / comparison["optimal_spend"].sum()
-```
-
-### Decision Framework
-
-| Optimization Signal | Meaning | Action |
-|--------------------|---------|--------|
-| Channel gets +50% | High marginal return, far from saturation | Increase investment |
-| Channel gets -30% | Low marginal return, near saturation | Reduce or reallocate |
-| Channel unchanged | Already near optimal | Maintain |
-| Hits upper bound | Would allocate more if allowed | Consider widening bounds |
-| Hits lower bound | Would allocate less if allowed | Review if channel is contractual |
-
-### Validation Checks
-1. **Total budget preserved:** `sum(optimal) == total_budget` (within tolerance)
-2. **Bounds respected:** Each channel within specified min/max
-3. **Predicted improvement is reasonable:** >20% improvement = verify, not magic
-4. **Rerun with different starting points:** Check for local optima
-5. **Business sense check:** Does the reallocation make marketing sense?
-
-## Common Pitfalls
-
-1. **Using model.optimize_budget()** -- Doesn't exist in multidimensional MMM. Use `BudgetOptimizer` + `CustomModelWrapper`.
-2. **Too tight bounds** -- Over-constrained optimization may find no improvement
-3. **Too loose bounds** -- Unrealistic reallocations that can't be executed in practice
-4. **Ignoring saturation** -- If a channel is already saturated, more spend won't help
-5. **Ignoring indirect effects** -- Budget optimization on sales model alone misses funnel effects
-6. **Single-point estimate** -- Always consider uncertainty in optimization results
-7. **Not accounting for lag** -- Budget changes take time to show effect (adstock)
-
-## Advanced: Multi-Scenario Analysis
-
-```python
-# Compare scenarios
-scenarios = {
-    "current": current_alloc,
-    "optimized_moderate": opt_alloc_moderate,   # +/- 20%
-    "optimized_aggressive": opt_alloc_aggressive, # +/- 50%
-    "digital_shift": digital_heavy_alloc,        # Manual scenario
-}
-
-for name, alloc in scenarios.items():
-    # Use model to predict outcome under each scenario
-    # (requires passing allocation through saturation + adstock transforms)
-    print(f"{name}: expected outcome = ...")
-```
-
-## Library Integration (v1)
-
-Budget optimization via `BudgetOptimizer` is not yet wrapped in the agent_mmm library in v1.
-Use the pymc-marketing API directly as documented in this skill.
-The `/mmm-report` command generates current-vs-optimal budget analysis in the MOps report using
-simplified response-curve-based allocation (not full BudgetOptimizer).
-
-Full BudgetOptimizer integration is planned for v2.
+`mmm-attribution` for marginal vs average return; `mmm-validation` for whether the model
+is fit to optimise on; `mmm-experimentation-calibration` for closing the loop;
+`mmm-api-reference` §9 for exact signatures.
