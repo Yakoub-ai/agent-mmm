@@ -35,7 +35,7 @@ pymc = [
 # environment where you actually run the generated code.
 meridian = ["google-meridian>=1.8"]
 parquet = ["pyarrow"]
-dev = ["pytest>=8", "pytest-cov"]
+dev = ["pytest>=8", "pytest-cov", "jsonschema>=4"]  # jsonschema validates the plugin manifests
 all = ["agent-mmm[pymc,parquet,dev]"]
 
 [tool.setuptools.packages.find]

@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "agent-mmm",
   "version": "0.2.0",
   "description": "Marketing Mix Model framework: framework-agnostic project spec, data preparation and auditing, causal specification, prior generation, model fitting, diagnostics and stakeholder reporting. Executable on pymc-marketing 1.x; generates code for Google Meridian and Meta Robyn.",
@@ -19,7 +20,5 @@
     "data-science"
   ],
   "homepage": "https://github.com/Yakoub-ai/agent-mmm",
-  "skills": "./skills",
-  "agents": "./agents",
-  "commands": "./commands"
+  "repository": "https://github.com/Yakoub-ai/agent-mmm"
 }
