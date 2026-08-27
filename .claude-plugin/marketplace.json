@@ -1,10 +1,10 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "yakoub-ai-plugins",
   "description": "Custom plugins for data science and marketing analytics workflows",
   "owner": {
     "name": "George",
-    "email": ""
+    "url": "https://github.com/Yakoub-ai"
   },
   "plugins": [
     {

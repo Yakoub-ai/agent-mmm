@@ -184,5 +184,5 @@ mmm-workspace/
 cd plugins/agent-mmm && python -m pytest tests/ -q
 ```
 
-145 tests, no MCMC required. Backend translation and decomposition are checked against
-known ground truth.
+155 tests, no MCMC required. Backend translation and decomposition are checked against
+known ground truth, and both plugin manifests are validated against the official schemas.
