@@ -1,119 +1,188 @@
 # agent-mmm
 
-A complete Marketing Mix Model (MMM) framework plugin for Claude Code, built on [pymc-marketing](https://github.com/pymc-labs/pymc-marketing) v0.19.1+.
+A Marketing Mix Model framework for Claude Code: expert knowledge, a framework-agnostic
+project spec, and an executable pipeline from raw CSV to stakeholder reports.
 
-## What it does
+Verified against **pymc-marketing 1.1.0**, **google-meridian 1.8.0** and **Robyn 3.12.1**
+(August 2026).
 
-Transforms raw marketing data into fitted Bayesian MMMs with full stakeholder reporting:
+---
 
-1. **Interactive intake** → captures company context, target unit, channels, controls
-2. **Automated data audit** → 11 quality checks, VIF, structural breaks, seasonality
-3. **Controls recommender** → external factors catalog by industry + region
-4. **Prior recommendation engine** → channel-type-aware Bayesian priors with moment matching
-5. **Model build + fit** → pymc-marketing multidimensional MMM with MCMC
-6. **Diagnostics** → convergence, overfit detection, prior-pull, plausibility checks
-7. **Iterative improvement** → tournament of variants + posterior-informed prior tightening
-8. **Stakeholder reports** → CMO / CFO / Marketing Ops / Data Science, target-unit-aware
+## What it is for
+
+Most bad MMMs are not bad models — they are good models fitted to data that does not mean
+what the modeller thinks, or specified so the coefficient is not the causal effect. This
+plugin is built around that: the roles of variables, the health of the baseline, whether a
+channel is identified at all, and what an experiment would resolve.
+
+It covers the full lifecycle:
+
+1. **Plan** — scope the decision, frame the project, set the gates
+2. **Intake** — a framework-agnostic `spec.yaml` with channel roles and experiments
+3. **Prepare** — aggregation, dense reindexing, explicit imputation, calendar features
+4. **Audit** — contract, shape, integrity, identifiability, signal, semantics
+5. **Specify** — causal design, channel semantics, baseline, priors in interpretable units
+6. **Build & fit** — compile to pymc-marketing (executable), Meridian or Robyn (code)
+7. **Diagnose** — convergence, baseline, generalisation, learning, plausibility
+8. **Improve** — tournament over structural variants, scored on generalisation
+9. **Report** — CMO, CFO, Marketing Ops and Data Science
+
+---
+
+## Install
+
+```
+/plugins → Marketplaces → + Add Marketplace → https://github.com/Yakoub-ai/agent-mmm
+Discover → agent-mmm → Install
+```
+
+For the Python library:
+
+```bash
+pip install -e "plugins/agent-mmm[pymc]"     # executable pymc-marketing backend
+pip install -e "plugins/agent-mmm"           # spec, audit, prep and code generation only
+```
+
+Requires Python ≥ 3.12 (pymc-marketing 1.x does).
+
+---
 
 ## Agents
 
 | Agent | Role |
-|-------|------|
-| `agent-mmm` | Orchestrator — routes tasks, loads skills, delegates to specialists |
-| `mmm-modeler` | Model construction and fitting specialist |
-| `mmm-diagnostician` | Convergence and validation specialist |
-| `mmm-improver` | Iterative improvement and tournament specialist |
-| `mmm-reporter` | Stakeholder report generation specialist |
+|---|---|
+| `agent-mmm` | Orchestrator and consultant across the whole lifecycle |
+| `mmm-modeler` | Compiles a spec, generates priors, runs the fit pipeline |
+| `mmm-diagnostician` | Full diagnostic review of a fitted run |
+| `mmm-improver` | Tournament and posterior-informed refinement |
+| `mmm-reporter` | Stakeholder reports |
 
-## Slash Commands
+## Commands
 
-| Command | Purpose |
-|---------|---------|
-| `/mmm-intake-quick` | 5-question quick intake — creates minimal `spec.yaml` |
-| `/mmm-intake` | Full ~25-question intake — creates production-ready `spec.yaml` |
-| `/mmm-analyze-data` | Run automated data quality audit |
-| `/mmm-recommend-controls` | Recommend external factors and control columns |
-| `/mmm-recommend-priors` | Generate channel-specific Bayesian priors |
-| `/mmm-build` | Build MMM from spec.yaml and model_config.json |
-| `/mmm-fit` | Run MCMC fitting pipeline (prior PC → fit → posterior PC) |
-| `/mmm-diagnose` | Run diagnostics on a fitted model run |
-| `/mmm-improve` | Launch tournament + posterior-informed refinement loop |
-| `/mmm-report` | Generate all four stakeholder reports |
-| `/mmm-status` | Show workspace status and run history |
+| Command | Does |
+|---|---|
+| `/mmm-intake` | Full intake → `spec.yaml` |
+| `/mmm-intake-quick` | Six questions, enough to run the audit |
+| `/mmm-prepare-data` | Aggregate, reindex, impute with explicit rules, add calendar features |
+| `/mmm-analyze-data` | Data audit with modelling consequences |
+| `/mmm-recommend-controls` | External-factor recommendations |
+| `/mmm-recommend-priors` | Half-life priors, ROI priors, per-channel structure |
+| `/mmm-build` | Compile the spec into the target framework |
+| `/mmm-fit` | Prior PC → calibration → MCMC → posterior PC → save |
+| `/mmm-diagnose` | Convergence, baseline, generalisation, plausibility |
+| `/mmm-improve` | Tournament + refinement loop |
+| `/mmm-report` | CMO / CFO / MOps / DS reports |
+| `/mmm-status` | Where the project is |
 
 ## Skills
 
-| Skill | Covers |
-|-------|--------|
-| `mmm-data-quality` | Data validation, completeness, collinearity, structural breaks |
-| `mmm-model-building` | Adstock/saturation selection, prior specification, fitting strategy |
-| `mmm-diagnostics` | Convergence thresholds, overfit detection, debugging decision tree |
-| `mmm-attribution` | Channel contributions, ROAS, response curves, decomposition |
-| `mmm-budget-optimization` | BudgetOptimizer API, sensitivity analysis, allocation |
-| `mmm-api-reference` | Complete pymc-marketing v0.19.1+ API reference |
-| `mmm-intake-questionnaire` | Intake Q&A structure, spec.yaml schema |
-| `mmm-greenfield-vs-brownfield` | GF/BF decision guide, Series A/B/C funnel design |
-| `mmm-external-factors-catalog` | Industry/region control catalog |
-| `mmm-iterative-improvement` | Tournament mechanics, posterior-informed refinement |
-| `mmm-stakeholder-reporting` | CMO/CFO/MOps/DS report templates and content guides |
-| `mmm-target-units` | Non-monetary targets, CPA vs ROAS framing, value_per_unit |
-| `mmm-multi-geo-panel` | Panel data format, multidimensional API, geo validation |
+**Practice**
+`mmm-project-plan` · `mmm-intake-questionnaire` · `mmm-greenfield-vs-brownfield`
 
-## Python Library
+**Data**
+`mmm-data-engineering` · `mmm-data-quality` · `mmm-external-factors-catalog`
 
-The plugin ships `agent_mmm` at `lib/agent_mmm/`. Install with:
+**Specification**
+`mmm-channel-semantics` · `mmm-causal-design` · `mmm-baseline-and-trend` ·
+`mmm-model-building` · `mmm-multi-geo-panel` · `mmm-target-units`
+
+**Measurement**
+`mmm-experimentation-calibration` · `mmm-validation` · `mmm-diagnostics`
+
+**Results**
+`mmm-attribution` · `mmm-budget-optimization` · `mmm-stakeholder-reporting` ·
+`mmm-iterative-improvement`
+
+**Frameworks**
+`mmm-api-reference` (pymc-marketing) · `mmm-meridian` · `mmm-robyn` ·
+`mmm-framework-selection`
+
+---
+
+## Frameworks
+
+One spec, three targets. `agent_mmm.backends` reports what each framework **cannot**
+express, so a feature never vanishes silently.
+
+| | pymc-marketing 1.1 | Meridian 1.8 | Robyn 3.12 |
+|---|---|---|---|
+| Capability here | **executable** | code generation | code generation |
+| Paradigm | Bayesian | Bayesian | Frequentist (ridge) |
+| Geo hierarchy | `dims=("geo",)` | native, population-weighted | none |
+| Media prior | coefficient | **ROI / mROI / contribution** | bounds + signs |
+| Reach & frequency | no | **native + optimal frequency** | no |
+| Log link | **yes** | no | no |
+| DAG / mediation | **yes** | no | no |
+| Experiment calibration | **likelihood term** | ROI prior | third objective |
+
+See `mmm-framework-selection`.
+
+---
+
+## Python library
+
+```python
+from agent_mmm.spec import load_spec
+from agent_mmm.data_prep import prepare_dataset
+from agent_mmm.data_audit import run_audit
+from agent_mmm.prior_engine import recommend_priors
+from agent_mmm.model_factory import compile_spec
+from agent_mmm.fit_runner import run_fit, SAMPLER_FINAL
+from agent_mmm.diagnostics import run_diagnostics, decompose
+
+spec           = load_spec("mmm-workspace/spec.yaml")
+clean, prep    = prepare_dataset(spec)
+audit          = run_audit(spec, df=clean)
+priors         = recommend_priors(spec, audit)
+compiled       = compile_spec(spec, priors=priors)   # .model .code .unsupported
+metrics        = run_fit(spec, priors=priors, sampler_config=SAMPLER_FINAL)
+findings       = run_diagnostics(metrics["run_id"], idata_path=metrics["model_path"])
+```
+
+| Module | Purpose |
+|---|---|
+| `spec` | Framework-agnostic project definition with channel roles and experiments |
+| `data_prep` | Aggregation, dense reindexing, explicit imputation, deflation, calendar/event flags |
+| `data_audit` | Six-group audit; every finding names the modelling consequence |
+| `prior_engine` | Half-life priors, ROI priors, identifiability-aware widening |
+| `backends` | pymc-marketing / Meridian / Robyn, each reporting what it cannot express |
+| `fit_runner` | Prior PC → calibration → fit → posterior PC → save with provenance |
+| `diagnostics` | Shared decomposition, baseline health, prior contraction, plausibility |
+| `iter_loop` | Tournament and refinement |
+| `reports` | CMO / CFO / MOps / DS |
+
+### Workspace
+
+```
+mmm-workspace/
+  spec.yaml
+  data/prepared.csv, prep_report.md
+  audit/audit.json, audit_report.md
+  controls/, priors/model_config.json, prior_audit_report.md
+  runs/<run-id>/model.nc, metrics.json, diagnostics.json, diagnostics_report.md
+  leaderboard.json
+  reports/cmo.md, cfo.md, mops.md, ds.md
+```
+
+---
+
+## Notes on pymc-marketing 1.x
+
+1.0 was a breaking release. If you learned the library before August 2026:
+
+* `from pymc_marketing.mmm import MMM` — `multidimensional` is deprecated, the legacy MMM
+  class is removed
+* `idata` is an `xarray.DataTree`, not `arviz.InferenceData`
+* `az.waic` no longer exists — use `az.loo`; `az.summary` takes `ci_prob=`
+* Budget optimisation is `mmm.budget_optimizer(start, end)`
+* `dims` is a tuple: `dims=("geo",)`
+* Saving needs `h5netcdf` or `netCDF4`
+
+## Tests
+
 ```bash
-pip install -e plugins/agent-mmm
+cd plugins/agent-mmm && python -m pytest tests/ -q
 ```
 
-Key modules:
-- `agent_mmm.data_audit` — `run_audit(spec, base)`
-- `agent_mmm.controls_engine` — `recommend_controls(spec, audit_findings, base)`
-- `agent_mmm.prior_engine` — `recommend_priors(spec, audit_findings, base)`
-- `agent_mmm.model_factory` — `build_mmm(spec, model_config_dict)`
-- `agent_mmm.fit_runner` — `run_fit(spec, ..., base)`
-- `agent_mmm.diagnostics` — `run_diagnostics(run_id, ..., base)`
-- `agent_mmm.iter_loop` — `run_tournament(spec_path, ..., base)`
-- `agent_mmm.reports.{cmo,cfo,mops,ds}` — stakeholder report generators
-
-## Workspace Layout
-
-All artifacts live in `./mmm-workspace/` in your project directory:
-
-```
-./mmm-workspace/
-├── spec.yaml                  # single source of truth
-├── audit/                     # data quality report
-├── controls/                  # recommended controls
-├── priors/                    # model_config.json + prior audit
-├── runs/                      # one directory per model run
-│   └── <run-id>/
-│       ├── idata.nc           # ArviZ InferenceData (fitted model)
-│       ├── metrics.json       # in-sample + CV metrics
-│       └── diagnostics.json   # convergence + fit checks
-├── leaderboard.json           # tournament scores
-└── reports/                   # cmo.md, cfo.md, mops.md, ds.md
-```
-
-## Requirements
-
-- Python 3.11+
-- `pymc-marketing >= 0.19.1`
-- `pymc-extras` (for `Prior`)
-- `pydantic >= 2`
-- `statsmodels`, `scipy`, `holidays`
-- Claude Code with plugin support
-
-## Workflow
-
-```
-/mmm-intake           # answer questions → spec.yaml
-/mmm-analyze-data     # audit data quality
-/mmm-recommend-controls  # get external factor suggestions
-/mmm-recommend-priors # generate priors for your channels
-/mmm-build            # build the model
-/mmm-fit              # fit with MCMC
-/mmm-diagnose         # check convergence and fit quality
-/mmm-improve          # run tournament to find best variant
-/mmm-report           # generate stakeholder reports
-```
+145 tests, no MCMC required. Backend translation and decomposition are checked against
+known ground truth.

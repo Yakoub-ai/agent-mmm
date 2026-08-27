@@ -182,4 +182,7 @@ Before writing final reports:
 1. Verify contributions sum to ≤ 100% (remainder = baseline/intercept)
 2. Confirm credible intervals are shown for all financial figures in CFO report
 3. Confirm CPA/ROAS framing matches `target_unit.kind`
-4. Confirm DS report includes exact sampler config and library version
+4. Confirm the DS report includes the sampler config, library versions, data fingerprint,
+   which parameters were prior-dominated, and which channels are calibrated
+5. Confirm no organic channel is quoted with a ROAS
+6. Confirm every budget recommendation is stated with its range and its constraint

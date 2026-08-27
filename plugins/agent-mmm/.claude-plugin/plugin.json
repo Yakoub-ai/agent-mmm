@@ -1,9 +1,24 @@
 {
   "name": "agent-mmm",
-  "description": "Complete Marketing Mix Model framework: automated data audit, prior recommendation, model build/fit/improve loop, and stakeholder reporting. Built on pymc-marketing v0.19.1+.",
+  "version": "0.2.0",
+  "description": "Marketing Mix Model framework: framework-agnostic project spec, data preparation and auditing, causal specification, prior generation, model fitting, diagnostics and stakeholder reporting. Executable on pymc-marketing 1.x; generates code for Google Meridian and Meta Robyn.",
   "author": {
     "name": "George"
   },
+  "keywords": [
+    "mmm",
+    "marketing-mix-model",
+    "media-mix-model",
+    "bayesian",
+    "pymc-marketing",
+    "meridian",
+    "robyn",
+    "attribution",
+    "incrementality",
+    "marketing-analytics",
+    "data-science"
+  ],
+  "homepage": "https://github.com/Yakoub-ai/agent-mmm",
   "skills": "../skills/",
   "agents": "../agents/",
   "commands": "../commands/"
