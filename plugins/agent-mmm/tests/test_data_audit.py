@@ -131,4 +131,6 @@ def test_audit_warns_insufficient_rows(tmp_path):
     spec = _make_spec(str(p))
     spec.channels = [ChannelMeta(column="spend_sem")]
     findings = run_audit(spec, base=str(tmp_path))
-    assert any("Insufficient" in e or "Marginal" in e for e in findings["errors"] + findings["warnings"])
+    messages = findings["errors"] + findings["warnings"]
+    assert any("30 periods" in m for m in messages)
+    assert findings["summary"]["data_quality_tier"] == "FAIL"
