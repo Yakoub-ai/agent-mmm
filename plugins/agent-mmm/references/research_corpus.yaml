@@ -1,0 +1,204 @@
+# Curated offline reference corpus for agent-mmm.
+#
+# This exists so the agent is not dependent on the network for the things that
+# change slowly: which framework does what, which methodology underpins a
+# technique, and roughly where a category's parameters usually land.
+#
+# It is a starting point, not an authority.
+#
+#   * Benchmark ranges are WIDE ON PURPOSE. They are sanity checks and sources of
+#     weakly-informative priors. A benchmark is never evidence about this
+#     company, and a posterior that has not moved away from a benchmark-derived
+#     prior has reported the benchmark back to you.
+#   * Anything version-specific decays. Check the version before relying on it.
+#   * Where sources conflict, the conflict is recorded rather than averaged.
+#
+# Fields:
+#   strength: peer_reviewed | vendor_documentation | vendor_blog | practitioner | folklore
+#   scope:    the population a number came from
+
+version: 1
+updated: 2026-09
+
+frameworks:
+  pymc_marketing:
+    current_major: "1.x"
+    strength: vendor_documentation
+    docs: https://www.pymc-marketing.io/
+    source: https://github.com/pymc-labs/pymc-marketing
+    breaking_change_note: >
+      1.0 was a breaking release. The legacy 0.x MMM class was removed,
+      pymc_marketing.mmm.multidimensional was deprecated, inference data became an
+      xarray.DataTree rather than arviz.InferenceData, and budget optimisation moved to
+      mmm.budget_optimizer(start, end). Most material found online describes 0.x and will
+      not run. Always check which version a source is describing.
+    strengths:
+      - Full Bayesian control over priors, and a first-class calibration path via lift tests
+      - Runs in-process in Python, so it can be scripted and tested
+      - Time-varying parameters and hierarchical geo pooling
+    limits:
+      - Slowest of the three to fit
+      - No native reach/frequency model; reach enters as the channel input
+    see_also_skill: mmm-api-reference
+
+  meridian:
+    current_major: "1.8+"
+    strength: vendor_documentation
+    docs: https://developers.google.com/meridian
+    source: https://github.com/google/meridian
+    strengths:
+      - Native reach x frequency modelling, which matters for CTV, YouTube and TV
+      - Designed around geo hierarchies with population scaling
+      - ROI priors as the calibration mechanism, which maps cleanly onto experiment results
+    limits:
+      - Opinionated structure; less freedom in prior specification
+      - Requires a rectangular geo panel
+    see_also_skill: mmm-meridian
+
+  robyn:
+    current_major: "3.12+"
+    strength: vendor_documentation
+    docs: https://facebookexperimental.github.io/Robyn/
+    source: https://github.com/facebookexperimental/Robyn
+    strengths:
+      - Fast; ridge regression with evolutionary hyperparameter search rather than MCMC
+      - Weibull adstock offers flexible delayed-peak carryover shapes
+      - Strong built-in budget allocator
+    limits:
+      - Frequentist, so no posterior and no honest uncertainty interval on a contribution
+      - R-based, which constrains integration in Python stacks
+      - Model selection across a Pareto front is a judgement call that is easy to abuse
+    see_also_skill: mmm-robyn
+
+methodology:
+  - topic: geo lift experiments
+    strength: vendor_documentation
+    sources:
+      - "Google: GeoLift / geo experiment design literature"
+      - "Meta: GeoLift R package documentation"
+    bearing: >
+      Standard reference for market selection, power analysis and inference in geo tests.
+      The consistent finding across implementations is that a matched pre-period does more
+      for power than adding markets does.
+
+  - topic: pre-period adjustment (CUPED and difference-in-differences)
+    strength: peer_reviewed
+    bearing: >
+      Adjusting the outcome by a pre-period covariate reduces residual variance by
+      sqrt(1 - rho^2). Geo panels typically show rho above 0.9 because market sizes are
+      persistent, which more than halves the detectable effect at no cost. Measure rho;
+      never assume it.
+
+  - topic: calibrating an MMM with experiment results
+    strength: vendor_documentation
+    bearing: >
+      All three frameworks accept experimental results as constraints
+      (add_lift_test_measurements, ROI priors, calibration_input). Constraining one channel
+      pushes on all of them because contributions must sum, so after refitting check that
+      neighbouring channels did not absorb the difference.
+
+  - topic: media saturation functions
+    strength: peer_reviewed
+    bearing: >
+      Hill and logistic saturation are the common choices. The saturation point is weakly
+      identified without spend variation spanning it, and where data does not cover the
+      knee, the shape is the prior's opinion rather than a finding.
+
+  - topic: brand versus generic search incrementality
+    strength: peer_reviewed
+    conflicts: >
+      Search-engine holdout studies have repeatedly found brand search incrementality far
+      below its last-click credit, in some cases near zero. Platform-side analyses report
+      substantially higher figures. The disagreement is real and unresolved in general —
+      it has to be measured per advertiser, and it is the reason brand search is usually
+      the highest-priority test on a roadmap.
+
+channel_benchmarks:
+  # Adstock half-lives in WEEKS. Wide ranges are honest, not lazy: half-life depends on
+  # category purchase cycle at least as much as on channel.
+  adstock_halflife_weeks:
+    scope: cross-category practitioner consensus; sanity check only
+    strength: practitioner
+    tv_linear:        {low: 2.0, high: 8.0,  note: "longer for considered purchases and brand campaigns"}
+    tv_connected:     {low: 1.5, high: 5.0}
+    video_online:     {low: 1.0, high: 4.0}
+    radio_audio:      {low: 1.0, high: 4.0}
+    ooh:              {low: 2.0, high: 8.0,  note: "long build, long decay; hardest to measure"}
+    print:            {low: 1.0, high: 4.0}
+    display:          {low: 0.5, high: 3.0}
+    social_prospecting: {low: 0.5, high: 3.0}
+    social_retargeting: {low: 0.2, high: 1.0, note: "audience already in-market; short window"}
+    search_generic:   {low: 0.1, high: 1.0,  note: "intent already exists; carryover is near zero"}
+    search_brand:     {low: 0.1, high: 1.0}
+    email:            {low: 0.2, high: 1.5,  note: "organic: no ROAS, there is no media cost"}
+    affiliate:        {low: 0.1, high: 1.0,  note: "often last-click credit for demand created elsewhere"}
+    direct_mail:      {low: 1.0, high: 6.0}
+
+  known_hard_channels:
+    - channel: search_brand
+      why: >
+        Always on, rarely varied, and correlated with every upper-funnel channel that
+        creates the demand people then search for. Observational MMM almost always
+        overstates it.
+      what_helps: A geo holdout. This is usually the highest-value first test.
+
+    - channel: pmax
+      why: Spend spans search, shopping, display and video inventory under one line item.
+      what_helps: >
+        Request the channel breakdown. Failing that, model it as one channel and state
+        explicitly that its coefficient mixes several media types.
+
+    - channel: retargeting
+      why: Reaches people who already intended to buy, so last-click credit is very high.
+      what_helps: A holdout, or at minimum splitting it from prospecting so it is visible.
+
+    - channel: affiliate
+      why: Frequently the last touch on a journey created by other channels.
+      what_helps: Treat as a candidate mediator, not a control. Test before funding it.
+
+    - channel: influencer
+      why: Spend is lumpy, attribution is weak, and effects are often brand rather than sales.
+      what_helps: Model as pulses; expect wide intervals and say so.
+
+    - channel: retail_media
+      why: Closest to the transaction, so it absorbs credit; often bought from a trade budget.
+      what_helps: Check whether it is even in the media budget being optimised.
+
+controls:
+  # A control nobody thought of explains more variance than most channels.
+  always_consider:
+    - price or price index
+    - promotion depth and promotional periods
+    - distribution, store count or availability
+    - seasonality (annual, and category-specific peaks)
+    - holidays specific to each market in the panel
+    - competitor activity where any measure exists
+    - structural breaks: rebrand, site migration, tracking change, stockout, pandemic
+  category_specific:
+    retail_cpg:   [weather, commodity input costs, retailer promotions, shelf space]
+    travel:       [fuel price, exchange rates, events, school holidays, capacity]
+    finance:      [interest rates, regulatory change, credit conditions]
+    subscription: [churn cohorts, pricing changes, content or product releases]
+    automotive:   [incentives, fuel price, supply constraints, model launches]
+
+practical_minimums:
+  scope: practitioner consensus; below these, identification rather than fit is the problem
+  strength: practitioner
+  weekly_periods: 104
+  monthly_periods: 36
+  note: >
+    Two years is the usual floor because an annual seasonal cycle and a channel that
+    happens to be seasonal cannot otherwise be separated. A geo panel buys observations
+    without buying history, which is often the cheapest way past this constraint.
+
+cautions:
+  - >
+    Benchmarks describe other businesses. Where a benchmark and this company's data
+    disagree, the data wins for this business — but a large gap usually indicates a
+    specification problem rather than a genuinely exceptional company.
+  - >
+    Any range in this file is wide enough to contain a wrong answer. Use it to flag an
+    implausible result, not to set a tight prior.
+  - >
+    Every entry here decays. Prefer a framework's own current documentation over this file
+    for anything version-specific.
