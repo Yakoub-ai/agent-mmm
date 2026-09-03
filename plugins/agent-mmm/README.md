@@ -1,7 +1,9 @@
 # agent-mmm
 
 A Marketing Mix Model framework for Claude Code: expert knowledge, a framework-agnostic
-project spec, and an executable pipeline from raw CSV to stakeholder reports.
+project spec, and an executable pipeline from a folder of raw exports to stakeholder
+decks — with an orchestrator that dispatches seven specialist sub-agents and stops at
+every gate that needs a human decision.
 
 Verified against **pymc-marketing 1.1.0**, **google-meridian 1.8.0** and **Robyn 3.12.1**
 (August 2026).
@@ -17,15 +19,67 @@ channel is identified at all, and what an experiment would resolve.
 
 It covers the full lifecycle:
 
-1. **Plan** — scope the decision, frame the project, set the gates
-2. **Intake** — a framework-agnostic `spec.yaml` with channel roles and experiments
-3. **Prepare** — aggregation, dense reindexing, explicit imputation, calendar features
-4. **Audit** — contract, shape, integrity, identifiability, signal, semantics
-5. **Specify** — causal design, channel semantics, baseline, priors in interpretable units
-6. **Build & fit** — compile to pymc-marketing (executable), Meridian or Robyn (code)
-7. **Diagnose** — convergence, baseline, generalisation, learning, plausibility
-8. **Improve** — tournament over structural variants, scored on generalisation
-9. **Report** — CMO, CFO, Marketing Ops and Data Science
+1. **Discover** — profile a folder of unknown exports and generate the questions that must
+   be answered before any of it can be trusted
+2. **Plan** — scope the decision, frame the project, set the gates
+3. **Intake** — a framework-agnostic `spec.yaml` with channel roles and experiments
+4. **Build the dataset** — campaign-name taxonomy, finance reconciliation, aggregation,
+   dense reindexing, explicit imputation
+5. **Audit** — contract, shape, integrity, identifiability, signal, semantics
+6. **Research** — category benchmarks and framework behaviour, treated as untrusted evidence
+7. **Specify** — causal design, channel semantics, baseline, priors in interpretable units
+8. **Build & fit** — compile to pymc-marketing (executable), Meridian or Robyn (code)
+9. **Diagnose** — convergence, baseline, generalisation, learning, plausibility
+10. **Improve** — tournament over structural variants, scored on generalisation
+11. **Experiment** — power analysis, prioritisation, and a sequenced roadmap with
+    pre-registered expectations
+12. **Deliver** — CMO, CFO, Marketing Ops and Data Science reports and presentation decks
+
+The whole sequence runs with `/mmm-run`, which stops at every gate.
+
+### What it will not do
+
+It will not guess past a question only a human can answer — whether a date marks delivery
+or billing, whether revenue is gross or net, whether a variable is media or a business
+lever. Those produce a model that is wrong in a way no diagnostic catches, so the pipeline
+stops and asks. On a raw data drop the questions *are* the deliverable, and there are
+usually ten to fifteen blocking ones.
+
+### Example: starting from a folder nobody can explain
+
+```
+/mmm-discover data/raw
+```
+
+```
+Files profiled: 6
+Proposed grain: weekly
+Usable window: 2022-06-05 -> 2023-12-01
+
+BLOCKING QUESTIONS (12):
+
+  [target] Several columns could be the target (finance.csv:Net Revenue,
+      finance.csv:Orders, google_ads.csv:conversions). Which one is the decision
+      made on, and is it gross or net of returns, tax and discounts?
+      why: Modelling gross revenue and reporting net ROAS overstates every
+           channel by the return rate.
+
+  [grain] 'tv_plan_monthly.csv' is monthly while the rest of the data supports
+      weekly. Can it be re-exported at weekly, should we model at the coarser
+      grain, or do we have a schedule to allocate it down?
+      why: Splitting monthly totals evenly across weeks invents variation the
+           model will read as real, and modelling everything monthly costs most
+           of the observations.
+
+  [coverage] The usable window is only 78 weekly periods. Can history be
+      extended, or should we model fewer channels, or move to a geo panel?
+      why: Below roughly two years the model cannot separate an annual seasonal
+           cycle from a channel that happens to be seasonal.
+  ...
+```
+
+Nothing is written, nothing is decided, and the twelfth question is always whether any
+channel has ever been tested.
 
 ---
 
@@ -51,16 +105,28 @@ Requires Python ≥ 3.12 (pymc-marketing 1.x does).
 
 | Agent | Role |
 |---|---|
-| `agent-mmm` | Orchestrator and consultant across the whole lifecycle |
+| `agent-mmm` | Orchestrator and consultant across the whole lifecycle; dispatches the rest |
+| `mmm-data-engineer` | Raw file discovery, taxonomy mapping, reconciliation, dataset assembly |
+| `mmm-researcher` | Benchmarks, methodology and framework docs — read-only by design |
+| `mmm-experiment-designer` | Power analysis, prioritisation, the experiment roadmap |
 | `mmm-modeler` | Compiles a spec, generates priors, runs the fit pipeline |
 | `mmm-diagnostician` | Full diagnostic review of a fitted run |
 | `mmm-improver` | Tournament and posterior-informed refinement |
-| `mmm-reporter` | Stakeholder reports |
+| `mmm-reporter` | Stakeholder reports and presentation decks |
+
+`mmm-researcher` has `WebSearch` and `WebFetch` but no `Write`, `Edit` or `Bash`. It
+processes content from the open web, and that content must never be able to reach a file or
+a shell in the project. Retrieved content is treated as evidence, never as instruction: a
+page containing embedded instructions is reported as a finding rather than obeyed.
 
 ## Commands
 
 | Command | Does |
 |---|---|
+| `/mmm-run` | The whole pipeline, stopping at every gate |
+| `/mmm-discover` | Profile a folder of raw exports; produce the blocking questions |
+| `/mmm-map-channels` | Campaign names → channels, with coverage and conflict reporting |
+| `/mmm-reconcile` | Modelled spend vs the finance ledger, with the variance pattern named |
 | `/mmm-intake` | Full intake → `spec.yaml` |
 | `/mmm-intake-quick` | Six questions, enough to run the audit |
 | `/mmm-prepare-data` | Aggregate, reindex, impute with explicit rules, add calendar features |
@@ -71,27 +137,33 @@ Requires Python ≥ 3.12 (pymc-marketing 1.x does).
 | `/mmm-fit` | Prior PC → calibration → MCMC → posterior PC → save |
 | `/mmm-diagnose` | Convergence, baseline, generalisation, plausibility |
 | `/mmm-improve` | Tournament + refinement loop |
+| `/mmm-experiment-plan` | Power analysis and the sequenced experiment roadmap |
 | `/mmm-report` | CMO / CFO / MOps / DS reports |
+| `/mmm-present` | Stakeholder decks: narrative, charts, speaker notes, objections |
+| `/mmm-research` | Benchmarks and methodology, under the untrusted-content rules |
 | `/mmm-status` | Where the project is |
 
 ## Skills
 
 **Practice**
-`mmm-project-plan` · `mmm-intake-questionnaire` · `mmm-greenfield-vs-brownfield`
+`mmm-orchestration` · `mmm-project-plan` · `mmm-intake-questionnaire` ·
+`mmm-greenfield-vs-brownfield` · `mmm-research`
 
 **Data**
-`mmm-data-engineering` · `mmm-data-quality` · `mmm-external-factors-catalog`
+`mmm-unstructured-data` · `mmm-data-engineering` · `mmm-data-quality` ·
+`mmm-external-factors-catalog`
 
 **Specification**
 `mmm-channel-semantics` · `mmm-causal-design` · `mmm-baseline-and-trend` ·
 `mmm-model-building` · `mmm-multi-geo-panel` · `mmm-target-units`
 
 **Measurement**
-`mmm-experimentation-calibration` · `mmm-validation` · `mmm-diagnostics`
+`mmm-experiment-roadmap` · `mmm-experimentation-calibration` · `mmm-validation` ·
+`mmm-diagnostics`
 
 **Results**
 `mmm-attribution` · `mmm-budget-optimization` · `mmm-stakeholder-reporting` ·
-`mmm-iterative-improvement`
+`mmm-presentations` · `mmm-iterative-improvement`
 
 **Frameworks**
 `mmm-api-reference` (pymc-marketing) · `mmm-meridian` · `mmm-robyn` ·
@@ -141,6 +213,10 @@ findings       = run_diagnostics(metrics["run_id"], idata_path=metrics["model_pa
 
 | Module | Purpose |
 |---|---|
+| `discovery` | Profiles unknown files: date format, grain, shape, column roles, joins, and the questions that must be answered |
+| `taxonomy` | Campaign names → channels, with rule provenance, coverage and conflict reporting |
+| `reconciliation` | Modelled spend vs the finance ledger, classifying the *shape* of the disagreement |
+| `experiments` | Power analysis for geo and time-based holdouts, prioritisation, the roadmap |
 | `spec` | Framework-agnostic project definition with channel roles and experiments |
 | `data_prep` | Aggregation, dense reindexing, explicit imputation, deflation, calendar/event flags |
 | `data_audit` | Six-group audit; every finding names the modelling consequence |
@@ -149,19 +225,22 @@ findings       = run_diagnostics(metrics["run_id"], idata_path=metrics["model_pa
 | `fit_runner` | Prior PC → calibration → fit → posterior PC → save with provenance |
 | `diagnostics` | Shared decomposition, baseline health, prior contraction, plausibility |
 | `iter_loop` | Tournament and refinement |
-| `reports` | CMO / CFO / MOps / DS |
+| `reports` | CMO / CFO / MOps / DS reports, and `reports.deck` for presentation specs |
 
 ### Workspace
 
 ```
 mmm-workspace/
+  discovery/discovery.md, taxonomy.md, reconciliation.md, answers.md
   spec.yaml
   data/prepared.csv, prep_report.md
   audit/audit.json, audit_report.md
   controls/, priors/model_config.json, prior_audit_report.md
   runs/<run-id>/model.nc, metrics.json, diagnostics.json, diagnostics_report.md
   leaderboard.json
+  experiments/roadmap.md
   reports/cmo.md, cfo.md, mops.md, ds.md
+  reports/deck_cmo.md, deck_cfo.md, deck_mops.md, deck_ds.md
 ```
 
 ---
@@ -184,5 +263,12 @@ mmm-workspace/
 cd plugins/agent-mmm && python -m pytest tests/ -q
 ```
 
-145 tests, no MCMC required. Backend translation and decomposition are checked against
-known ground truth.
+467 tests, no MCMC required. Backend translation and decomposition are checked against known ground
+truth; power calculations are checked against standard normal tables; discovery is checked
+against a fixture set of deliberately messy exports (day-first dates, currency-as-text,
+duplicate rows, mismatched grains, a geo panel joined to national files).
+
+The plugin's own prompts are tested too — `tests/test_plugin_components.py` checks that the
+orchestrator can actually dispatch the sub-agents it documents, that the researcher has no
+write or shell access, that every referenced skill and command exists, and that documented
+library imports resolve. Both manifests are validated against the official schemas.

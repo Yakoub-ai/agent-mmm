@@ -53,6 +53,9 @@ def test_load_csv(tmp_path):
 
 
 def test_load_parquet(tmp_path):
+    # Parquet support is the optional `parquet` extra, not part of `dev`, so this
+    # skips rather than failing a clean `pip install -e ".[dev]"`.
+    pytest.importorskip("pyarrow", reason="install agent-mmm[parquet] for parquet support")
     df = pd.DataFrame({"date": ["2022-01-03"], "y": [1000.0]})
     p = tmp_path / "test.parquet"
     df.to_parquet(p, index=False)

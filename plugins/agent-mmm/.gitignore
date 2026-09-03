@@ -6,4 +6,6 @@ __pycache__/
 dist/
 build/
 mmm-workspace/
+.venv/
+venv/
 .DS_Store

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-mmm"
-version = "0.2.0"
+version = "0.3.0"
 description = "Framework-agnostic Marketing Mix Model tooling for the agent-mmm Claude Code plugin"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -35,7 +35,7 @@ pymc = [
 # environment where you actually run the generated code.
 meridian = ["google-meridian>=1.8"]
 parquet = ["pyarrow"]
-dev = ["pytest>=8", "pytest-cov"]
+dev = ["pytest>=8", "pytest-cov", "jsonschema>=4"]  # jsonschema validates the plugin manifests
 all = ["agent-mmm[pymc,parquet,dev]"]
 
 [tool.setuptools.packages.find]
