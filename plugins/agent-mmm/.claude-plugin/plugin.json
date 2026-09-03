@@ -20,6 +20,12 @@
   ],
   "homepage": "https://github.com/Yakoub-ai/agent-mmm",
   "skills": "./skills",
-  "agents": "./agents",
+  "agents": [
+    "./agents/agent-mmm.md",
+    "./agents/mmm-diagnostician.md",
+    "./agents/mmm-improver.md",
+    "./agents/mmm-modeler.md",
+    "./agents/mmm-reporter.md"
+  ],
   "commands": "./commands"
 }
