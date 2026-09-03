@@ -1,0 +1,106 @@
+week,campaign_type,cost,impressions,conversions,search_impr_share,notes_field
+2022-01-03,PMax,4360.39,338084,558,0.76,budget capped
+2022-01-10,Search Generic,6172.85,226610,719,0.702,creative refresh
+2022-01-17,Search Generic,5099.16,214989,475,0.791,
+2022-01-24,PMax,6164.6,246408,837,0.785,budget capped
+2022-01-31,Search Generic,4627.14,371026,542,0.63,creative refresh
+2022-02-07,PMax,5213.44,227418,859,0.669,budget capped
+2022-02-14,PMax,4690.91,378058,501,0.439,budget capped
+2022-02-21,Search Generic,5628.05,203663,620,0.776,
+2022-02-28,Search Generic,5111.07,213309,757,0.541,budget capped
+2022-03-07,Search Generic,6198.62,253931,409,0.459,creative refresh
+2022-03-14,Search Brand,5940.2,254406,451,0.422,creative refresh
+2022-03-21,PMax,5574.47,320786,677,0.546,creative refresh
+2022-03-28,Search Generic,5168.97,241088,629,0.465,creative refresh
+2022-04-04,Search Generic,4931.79,348678,691,0.484,creative refresh
+2022-04-11,Search Brand,5206.6,225286,485,0.602,
+2022-04-18,Search Brand,5874.85,294630,492,0.573,budget capped
+2022-04-25,Search Generic,5318.6,285743,857,0.534,budget capped
+2022-05-02,PMax,5463.02,385333,410,0.49,
+2022-05-09,Search Generic,5168.91,295674,673,0.705,budget capped
+2022-05-16,Search Generic,5134.82,208667,508,0.67,
+2022-05-23,Search Generic,4606.72,316282,365,0.596,creative refresh
+2022-05-30,Search Generic,3519.92,375978,768,0.497,
+2022-06-06,Search Generic,5715.9,244671,699,0.792,creative refresh
+2022-06-13,PMax,5704.57,209619,490,0.451,
+2022-06-20,Search Generic,4332.85,358982,747,0.591,creative refresh
+2022-06-27,PMax,6916.57,319985,777,0.503,budget capped
+2022-07-04,PMax,4156.18,317582,499,0.763,creative refresh
+2022-07-11,Search Brand,6097.17,240971,517,0.668,budget capped
+2022-07-18,Search Brand,5429.37,229545,543,0.855,budget capped
+2022-07-25,Search Generic,5485.61,343486,781,0.733,budget capped
+2022-08-01,Search Generic,6223.2,205438,807,0.722,
+2022-08-08,PMax,6029.53,349437,665,0.44,budget capped
+2022-08-15,Search Brand,5224.95,368579,837,0.406,creative refresh
+2022-08-22,PMax,4253.7,362856,864,0.72,creative refresh
+2022-08-29,PMax,4108.73,293964,871,0.792,creative refresh
+2022-09-05,PMax,5373.72,258957,435,0.831,budget capped
+2022-09-12,Search Brand,6620.19,251246,508,0.895,creative refresh
+2022-09-19,Search Brand,5991.98,231596,762,0.838,
+2022-09-26,Search Generic,5174.76,291276,676,0.676,creative refresh
+2022-10-03,Search Brand,5500.01,352052,569,0.744,budget capped
+2022-10-10,Search Generic,5818.01,252562,403,0.577,creative refresh
+2022-10-17,PMax,6746.05,337405,423,0.889,budget capped
+2022-10-24,PMax,4521.45,221245,710,0.887,creative refresh
+2022-10-31,PMax,5854.03,290908,399,0.754,
+2022-11-07,Search Generic,5453.2,363965,854,0.516,creative refresh
+2022-11-14,Search Generic,4522.07,286426,448,0.681,budget capped
+2022-11-21,Search Generic,4291.35,272858,514,0.742,
+2022-11-28,Search Generic,6342.37,300271,707,0.807,budget capped
+2022-12-05,Search Brand,5500.45,230695,574,0.722,budget capped
+2022-12-12,PMax,5015.4,391016,809,0.799,
+2022-12-19,PMax,5293.91,379642,677,0.788,
+2022-12-26,Search Generic,6085.55,225306,482,0.727,
+2023-01-02,Search Generic,5288.81,373581,596,0.458,
+2023-01-09,Search Brand,6645.43,319100,503,0.769,
+2023-01-16,Search Generic,4971.13,320379,367,0.635,creative refresh
+2023-01-23,Search Generic,4500.21,371652,373,0.799,budget capped
+2023-01-30,Search Brand,5103.5,287894,559,0.454,creative refresh
+2023-02-06,PMax,4361.78,220360,617,0.645,
+2023-02-13,PMax,4891.03,391030,628,0.559,creative refresh
+2023-02-20,Search Generic,6304.16,348592,366,0.641,
+2023-02-27,Search Brand,6736.48,216898,659,0.891,budget capped
+2023-03-06,Search Brand,5771.61,363781,488,0.785,budget capped
+2023-03-13,Search Brand,5381.94,398015,741,0.84,
+2023-03-20,Search Brand,4388.29,249715,843,0.819,
+2023-03-27,Search Brand,4304.47,243185,826,0.431,creative refresh
+2023-04-03,Search Brand,5536.5,268707,610,0.761,
+2023-04-10,PMax,5354.56,391087,662,0.772,
+2023-04-17,Search Generic,4683.6,285543,485,0.779,creative refresh
+2023-04-24,Search Generic,4803.96,262992,818,0.526,creative refresh
+2023-05-01,Search Generic,6604.63,397866,752,0.587,
+2023-05-08,PMax,6094.24,361744,862,0.724,
+2023-05-15,Search Generic,5252.58,381573,300,0.536,creative refresh
+2023-05-22,Search Generic,5409.94,248785,656,0.653,
+2023-05-29,Search Brand,6351.49,385692,743,0.606,budget capped
+2023-06-05,PMax,5528.57,372928,454,0.438,
+2023-06-12,PMax,5419.07,273319,784,0.436,budget capped
+2023-06-19,PMax,3791.78,257177,320,0.503,
+2023-06-26,Search Generic,3689.11,376922,592,0.627,creative refresh
+2023-07-03,Search Brand,3489.64,271079,545,0.858,
+2023-07-10,PMax,3180.13,299207,427,0.781,
+2023-07-17,Search Brand,5192.44,295218,644,0.554,
+2023-07-24,PMax,5501.41,319510,434,0.793,
+2023-07-31,Search Brand,4421.98,377940,725,0.804,creative refresh
+2023-08-07,Search Generic,5601.07,331849,840,0.864,budget capped
+2023-08-14,PMax,5602.45,260263,366,0.751,creative refresh
+2023-08-21,PMax,5134.24,347450,729,0.709,creative refresh
+2023-08-28,Search Brand,3880.66,241974,474,0.735,
+2023-09-04,Search Brand,6501.63,266986,884,0.437,budget capped
+2023-09-11,PMax,6440.89,284495,581,0.698,budget capped
+2023-09-18,Search Generic,4686.05,274444,414,0.421,budget capped
+2023-09-25,Search Generic,6949.06,315795,325,0.717,budget capped
+2023-10-02,Search Generic,5245.9,224952,552,0.733,budget capped
+2023-10-09,PMax,4499.04,232029,675,0.589,
+2023-10-16,Search Brand,4837.06,373984,769,0.487,
+2023-10-23,Search Brand,3537.04,295555,303,0.658,budget capped
+2023-10-30,Search Brand,4889.94,290578,651,0.478,budget capped
+2023-11-06,Search Brand,3765.88,358099,670,0.591,
+2023-11-13,Search Brand,6222.73,392003,590,0.753,budget capped
+2023-11-20,Search Generic,5492.24,277356,486,0.416,budget capped
+2023-11-27,Search Brand,3955.94,252903,379,0.868,creative refresh
+2023-12-04,Search Generic,5720.75,365855,667,0.843,creative refresh
+2023-12-11,Search Brand,3660.95,325631,865,0.583,budget capped
+2023-12-18,Search Brand,5345.4,357707,867,0.811,budget capped
+2023-12-25,Search Generic,5634.33,399393,427,0.808,budget capped
+2022-03-14,Search Brand,5940.2,254406,451,0.422,creative refresh

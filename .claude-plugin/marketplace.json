@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "agent-mmm",
-      "description": "Marketing Mix Model expert agent, skills and pipeline. Covers planning, data engineering and auditing, causal specification, channel semantics, baseline health, priors, fitting, diagnostics, validation, experimentation and calibration, attribution and budget optimisation. Executable on pymc-marketing 1.x; generates code for Google Meridian 1.8 and Meta Robyn 3.12.",
+      "description": "Marketing Mix Model expert agent with seven specialist sub-agents. Covers raw data discovery and the questions that must be answered before modelling, campaign taxonomy mapping, finance reconciliation, causal specification, priors, fitting, diagnostics, validation, experiment design with power analysis, attribution, budget optimisation, and stakeholder reports and presentation decks. Executable on pymc-marketing 1.x; generates code for Google Meridian 1.8 and Meta Robyn 3.12.",
       "author": {
         "name": "George"
       },
@@ -23,7 +23,10 @@
         "meridian",
         "robyn",
         "attribution",
-        "incrementality"
+        "incrementality",
+        "experiment-design",
+        "geo-lift",
+        "data-engineering"
       ]
     }
   ]
