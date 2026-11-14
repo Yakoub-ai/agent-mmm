@@ -185,6 +185,7 @@ def test_referenced_library_symbols_exist():
     fails at the worst moment: in front of them, mid-task."""
     import agent_mmm.discovery, agent_mmm.experiments, agent_mmm.reconciliation
     import agent_mmm.reports.deck, agent_mmm.taxonomy
+    import agent_mmm.data_audit, agent_mmm.data_advisor
 
     modules = {
         "agent_mmm.discovery": agent_mmm.discovery,
@@ -192,6 +193,8 @@ def test_referenced_library_symbols_exist():
         "agent_mmm.reconciliation": agent_mmm.reconciliation,
         "agent_mmm.experiments": agent_mmm.experiments,
         "agent_mmm.reports.deck": agent_mmm.reports.deck,
+        "agent_mmm.data_audit": agent_mmm.data_audit,
+        "agent_mmm.data_advisor": agent_mmm.data_advisor,
     }
     pattern = re.compile(r"from (agent_mmm[.\w]*) import ([^\n]+)")
     missing = []
@@ -209,19 +212,17 @@ def test_referenced_library_symbols_exist():
 # --------------------------------------------------------------------------- #
 # Commands
 # --------------------------------------------------------------------------- #
-NEW_COMMANDS = [
-    "mmm-discover", "mmm-map-channels", "mmm-reconcile",
-    "mmm-experiment-plan", "mmm-present", "mmm-research", "mmm-run",
-]
-
-
-@pytest.mark.parametrize("name", NEW_COMMANDS)
-def test_new_commands_locate_the_library_by_plugin_root(name):
-    """CLAUDE_PLUGIN_ROOT is the documented way to find plugin files. The older
-    commands rglob the whole of ~/.claude looking for the package."""
-    text = (PLUGIN_ROOT / "commands" / f"{name}.md").read_text(encoding="utf-8")
-    if "agent_mmm" in text:
-        assert "CLAUDE_PLUGIN_ROOT" in text, f"/{name} should use ${{CLAUDE_PLUGIN_ROOT}}"
+@pytest.mark.parametrize("path", COMMANDS, ids=lambda p: p.stem)
+def test_commands_locate_the_library_safely(path):
+    """Commands must load agent_mmm from ${CLAUDE_PLUGIN_ROOT}/lib and fail if it
+    is unset. Searching ~/.claude, or falling back to '.', imports whichever
+    directory named agent_mmm is found first — code from outside the plugin."""
+    text = path.read_text(encoding="utf-8")
+    assert "rglob(" not in text, f"/{path.stem} searches the filesystem for the library"
+    assert "CLAUDE_PLUGIN_ROOT:-" not in text, f"/{path.stem} falls back when the plugin root is unset"
+    if "from agent_mmm" in text:
+        assert "${CLAUDE_PLUGIN_ROOT:?" in text, f"/{path.stem} must require ${{CLAUDE_PLUGIN_ROOT}}"
+        assert "python3 - " not in text, f"/{path.stem} must run in the project env ($PY), not system python3"
 
 
 def test_run_command_defines_gates_for_every_stage():

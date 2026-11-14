@@ -85,7 +85,12 @@ its first review, and should not.
 ```python
 prepared, prep_report = prepare_dataset(spec, df)     # show suggest_imputation() first
 findings = run_audit(spec, df=prepared)
+tips = run_advisor(spec, findings, df=prepared)       # data_quality_tips.md
 ```
+
+`run_advisor` (from `agent_mmm.data_advisor`) turns the audit into prioritised tips, each
+with evidence, the fix for this model and the change to data collection going forward,
+plus unused value in the dataset (geo detail, delivery metrics, unmodelled columns).
 
 Never apply an imputation rule the user has not seen. Show the proposed rule per column
 and what each rule asserts, then apply what they confirm.
@@ -98,6 +103,8 @@ and what each rule asserts, then apply what they confirm.
 2. What you found — per file, what it is and what state it is in.
 3. What you did — every transformation, with the claim it makes.
 4. What you could not settle, and what you would need to settle it.
+5. The critical and high tips from `data_quality_tips.md`, and the data collection
+   checklist for whoever owns the feeds.
 5. Paths to every artefact written under `mmm-workspace/`.
 
 Write artefacts to `mmm-workspace/discovery/`, `mmm-workspace/prepared/` and

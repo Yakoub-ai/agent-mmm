@@ -24,7 +24,7 @@ output.
 | 1 | Discover the raw data | `mmm-data-engineer` | Every blocking question answered by the user |
 | 2 | Intake and spec | you | Roles agreed per column; target and units agreed |
 | 3 | Build the dataset | `mmm-data-engineer` | Taxonomy ≥99% of spend; finance reconciled and signed off |
-| 4 | Audit | `mmm-data-engineer` | No blocking audit errors; tier known and accepted |
+| 4 | Audit and improvement plan | `mmm-data-engineer` | No blocking audit errors; tier known and accepted; critical tips fixed or accepted |
 | 5 | Research | `mmm-researcher` | Findings cited, with strengths labelled |
 | 6 | Causal specification | you | Every variable's role justified; no mediators as controls |
 | 7 | Priors and prior predictive | `mmm-modeler` | Simulated outcomes physically possible |
