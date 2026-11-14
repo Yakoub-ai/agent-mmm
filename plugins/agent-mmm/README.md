@@ -35,7 +35,8 @@ It covers the full lifecycle:
     pre-registered expectations
 12. **Deliver** — CMO, CFO, Marketing Ops and Data Science reports and presentation decks
 
-The whole sequence runs with `/mmm-run`, which stops at every gate.
+The whole sequence runs with `/mmm-run`: it scans the project (greenfield or brownfield), asks
+the questions only you can answer, runs each stage, stops at every gate, and resumes where you left off.
 
 ### What it will not do
 
@@ -121,7 +122,7 @@ page containing embedded instructions is reported as a finding rather than obeye
 | Command | Does |
 |---|---|
 | `/mmm-setup` | Create or verify the project environment (uv, pyenv or venv); checks client data is git-ignored |
-| `/mmm-run` | The whole pipeline, stopping at every gate |
+| `/mmm-run` | **Start here.** Scans the project, asks what only you can answer, runs each stage step by step, and resumes where you left off |
 | `/mmm-discover` | Profile a folder of raw exports; produce the blocking questions |
 | `/mmm-map-channels` | Campaign names → channels, with coverage and conflict reporting |
 | `/mmm-reconcile` | Modelled spend vs the finance ledger, with the variance pattern named |

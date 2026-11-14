@@ -116,9 +116,15 @@ presented as a finding is a fabrication, however good the model is otherwise.
 
 ## Running the whole thing
 
-The `/mmm-run` command walks these stages and stops at every gate. It is deliberately
-interruptible: most gates are conversations, and a pipeline that runs to completion without
-stopping has almost certainly guessed at something.
+`/mmm-run` is the single entry point. Every session it **scans** the project
+(`project_scan.py scan`: greenfield or brownfield, environment, data, existing models, stage
+status, stale outputs), **summarises** what it found, **asks** the questions only the user
+can answer, **executes** the next stage, and **records** the gate decision in
+`mmm-workspace/progress.json` (`project_scan.py record`) so the next session resumes there.
+A recorded gate reopens as stale when its inputs change.
+
+It is deliberately interruptible: most gates are conversations, and a pipeline that runs to
+completion without stopping has almost certainly guessed at something.
 
 **Report progress against gates, not against tasks.** "Blocked at gate 3: 4% of spend is
 unmapped, here are the campaign names" is useful. "Working on data preparation" is not.

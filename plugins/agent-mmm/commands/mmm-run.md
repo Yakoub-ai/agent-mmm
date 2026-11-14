@@ -1,28 +1,65 @@
 ---
-description: Run a full MMM engagement end to end — discovery, intake, dataset, specification, fit, diagnosis, validation, interpretation, experiment roadmap and stakeholder delivery — stopping at every gate that needs a human decision.
+description: The one command for an MMM project. Scans the project (greenfield or brownfield, environment, data, existing models, progress so far), asks the questions only you can answer, then runs each stage step by step — discovery, data, audit, modelling, diagnosis, experiments and delivery — stopping at every gate and resuming where you left off.
 ---
 
 # MMM Run
 
-Walks the whole pipeline. **It is deliberately interruptible**: most gates are
-conversations, and a pipeline that runs to completion without stopping has almost certainly
-guessed at something.
+The single entry point. Use it for a new project, an existing one, or to pick up where the
+last session stopped. **It is deliberately interruptible**: most gates are conversations,
+and a pipeline that runs to completion without stopping has almost certainly guessed.
 
 Load `agent-mmm:mmm-orchestration` first.
 
-## How to run this
+## The loop
 
-At each stage: state which stage you are on, do the work (yourself or by dispatching the
-sub-agent), then **check the gate**. If the gate does not hold, stop and say what is
-missing. Do not proceed while recording the failure in a footnote.
+### 1. Scan — always first, every session
 
-Report progress **against gates, not tasks**. "Blocked at gate 3: 4% of spend is unmapped,
-here are the campaign names" is useful. "Working on data preparation" is not.
+```bash
+python3 -I "${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}/lib/agent_mmm/project_scan.py" scan
+```
+
+Read-only. It reports the project type (greenfield/brownfield, with evidence), the
+environments, data files with their columns, existing model code and artefacts, each
+stage's status, stale outputs, questions for the user, and the next stage.
+
+### 2. Understand — summarise before acting
+
+Tell the user in a few lines what you found: project type and why, what data exists, how
+far the pipeline got, anything stale or blocked. For **brownfield**, read the existing model
+code and artefacts before proposing anything, and load `agent-mmm:mmm-greenfield-vs-brownfield`.
+
+### 3. Ask — the scan's questions, a few at a time
+
+Ask the scan's questions, most consequential first (security and decision before data).
+Add your own only when the answer changes what you do next. Never guess an answer that
+belongs to the user. Record decisions that close a gate (step 5).
+
+### 4. Execute — the next stage
+
+Work the stage the scan points at (table below): explain what you will do, run the command
+or dispatch the sub-agent, and show the result. Anything that installs software, changes
+the user's files outside `mmm-workspace/`, or changes the spec needs the user's agreement
+first.
+
+### 5. Record the gate — so the next session can resume
+
+When the gate holds, or the user decides to skip or accept it, record it with their reason:
+
+```bash
+python3 -I "${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}/lib/agent_mmm/project_scan.py" record --stage N --status passed --note "REASON"
+```
+
+Status is `passed`, `skipped` (not needed, e.g. stages 1 and 3 when the user already has a
+model-ready table) or `blocked` (say what unblocks it). Only record what the user agreed to.
+A recorded gate reopens automatically as **stale** when its inputs change later.
+
+Then scan again and continue. Report progress **against gates, not tasks**: "Blocked at
+gate 3: 4% of spend is unmapped, here are the campaign names" is useful; "working on data
+preparation" is not.
 
 ## The stages
 
-Before stage 0, check the environment: if `.venv-mmm/` (or `$MMM_PYTHON`) is missing, run
-`/mmm-setup`. Every later command runs in it.
+If the scan shows no environment, run `/mmm-setup` before any stage that runs Python.
 
 **0 — Frame the decision.** *You.* What decision does this inform, by when, and what would
 change if the answer came back differently? This sets the required precision, the channel
