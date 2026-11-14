@@ -28,7 +28,9 @@ import numpy as np
 import pandas as pd
 
 from agent_mmm.model_factory import build_mmm, prepare_data
+from agent_mmm.results_schema import holdout_mask
 from agent_mmm.spec import MMMSpec
+from agent_mmm.utils.io import load_data, parse_dates
 from agent_mmm.workspace import ensure_run_dir, new_run_id
 
 logger = logging.getLogger(__name__)
@@ -93,8 +95,16 @@ def run_fit(
     prior_pc_samples: int = 500,
     apply_lift_tests: bool = True,
     df: pd.DataFrame | None = None,
+    holdout: Any = None,
+    export_results: bool = True,
 ) -> dict[str, Any]:
-    """Fit one model end to end and write its artefacts under ``runs/<run_id>/``."""
+    """Fit one model end to end and write its artefacts under ``runs/<run_id>/``.
+
+    ``holdout``: None/0 fits on every period (previous behaviour); "auto" or an
+    int holds out trailing periods (``spec.validation`` dates win when set).
+    The same split is used for every framework, so holdout errors compare.
+    ``export_results`` writes the framework-neutral ``results.json``.
+    """
     run_id = run_id or new_run_id()
     sampler_config = sampler_config or {
         "draws": spec.sampler.draws,
@@ -112,8 +122,20 @@ def run_fit(
                 raw = json.load(f)
             priors = raw if "model_config" in raw else {"model_config": raw}
 
-    X, y = prepare_data(spec, df=df)
-    model = build_mmm(spec, priors=priors, df=df)
+    raw = df if df is not None else parse_dates(load_data(spec.data_path), spec.date_column)
+    X_all, y_all = prepare_data(spec, df=raw)
+    date_keys = pd.to_datetime(X_all[spec.date_column]).dt.strftime("%Y-%m-%d")
+    holdout_dates: set[str] = set()
+    if holdout or spec.validation.holdout_start:
+        uniq = sorted(date_keys.unique())
+        mask = holdout_mask(
+            len(uniq), spec.periods_per_year(), holdout or "auto", dates=uniq,
+            start=spec.validation.holdout_start, end=spec.validation.holdout_end,
+        )
+        holdout_dates = {d for d, h in zip(uniq, mask) if h}
+    keep = ~date_keys.isin(holdout_dates).to_numpy()
+    X, y = X_all[keep].reset_index(drop=True), y_all[keep].reset_index(drop=True)
+    model = build_mmm(spec, priors=priors, df=raw[keep].reset_index(drop=True) if holdout_dates else raw)
 
     metrics: dict[str, Any] = {
         "run_id": run_id,
@@ -127,6 +149,7 @@ def run_fit(
             "target": spec.target_column,
             "granularity": spec.granularity.value,
         },
+        "holdout_periods": len(holdout_dates),
         "provenance": {
             "data_path": str(spec.data_path),
             "data_fingerprint": data_fingerprint(X.assign(**{spec.target_column: y.values})),
@@ -192,6 +215,20 @@ def run_fit(
         metrics["save_error"] = (
             f"{e}. Saving a DataTree to netCDF needs h5netcdf or netCDF4 installed."
         )
+
+    if export_results:
+        try:
+            from agent_mmm.pymc_results import extract_pymc_results
+
+            res = extract_pymc_results(
+                model, spec, X_all.reset_index(drop=True), y_all.reset_index(drop=True), raw,
+                holdout_dates, run_id, provenance=metrics["provenance"],
+            )
+            metrics["results_path"] = str(res.save(run_dir / "results.json"))
+            metrics["holdout_fit"] = {k: v for k, v in res.fit.items() if "holdout" in k}
+        except Exception as e:
+            logger.warning("Could not export results.json: %s", e)
+            metrics["results_error"] = str(e)
 
     with open(run_dir / "metrics.json", "w") as f:
         json.dump(metrics, f, indent=2, default=str)

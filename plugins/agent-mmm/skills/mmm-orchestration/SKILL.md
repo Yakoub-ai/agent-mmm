@@ -28,9 +28,9 @@ output.
 | 5 | Research | `mmm-researcher` | Findings cited, with strengths labelled |
 | 6 | Causal specification | you | Every variable's role justified; no mediators as controls |
 | 7 | Priors and prior predictive | `mmm-modeler` | Simulated outcomes physically possible |
-| 8 | Fit | `mmm-modeler` | Sampler completed; artefacts written |
+| 8 | Fit (one or more frameworks) | `mmm-modeler` | Sampler completed; `results.json` per framework |
 | 9 | Diagnose | `mmm-diagnostician` | Convergence clean; baseline sane |
-| 10 | Validate | `mmm-diagnostician` | Out-of-sample and refutation results in hand |
+| 10 | Validate and compare | `mmm-diagnostician` | Out-of-sample results in hand; framework disagreements named |
 | 11 | Improve | `mmm-improver` | Score plateaued, or the budget for iteration is spent |
 | 12 | Interpret | you | Contributions with intervals; marginal separated from average |
 | 13 | Experiment roadmap | `mmm-experiment-designer` | At least one viable, powered test identified |

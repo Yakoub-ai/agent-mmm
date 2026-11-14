@@ -98,17 +98,20 @@ predictive check.
 → *Gate: simulated outcomes are physically possible. A benchmark ROAS translated carelessly
 into a coefficient can imply revenue several times the size of the business.*
 
-**8 — Fit.** *Dispatch `mmm-modeler`,* or run `/mmm-fit`.
-→ *Gate: the sampler completed and artefacts are written.*
+**8 — Fit.** *Dispatch `mmm-modeler`,* or run `/mmm-fit`. Ask whether to fit pymc-marketing,
+Meridian, or both; every framework uses the same holdout.
+→ *Gate: the sampler completed and `results.json` is written for each framework.*
 
 **9 — Diagnose.** *Dispatch `mmm-diagnostician`,* or run `/mmm-diagnose`. Convergence →
 fit → generalisation → baseline → learning → plausibility, in that order.
 → *Gate: convergence clean and the baseline sane. Stop at the first failure and say why the
 rest cannot be read yet.*
 
-**10 — Validate.** *Dispatch `mmm-diagnostician`.* Cross-validation, holdout, refutation
-tests, stability.
-→ *Gate: out-of-sample and refutation results in hand, including the ones that failed.*
+**10 — Validate and compare.** *Dispatch `mmm-diagnostician`,* or run `/mmm-compare` when more
+than one framework was fitted. Holdout error, refutation tests, stability, and where the
+frameworks agree or disagree per channel.
+→ *Gate: out-of-sample results in hand, including the ones that failed; channels the
+frameworks disagree on are named and carried into the experiment roadmap.*
 
 **11 — Improve.** *Dispatch `mmm-improver`,* or run `/mmm-improve`.
 → *Gate: the score has plateaued, or the iteration budget is spent.*

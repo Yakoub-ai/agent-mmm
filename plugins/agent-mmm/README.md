@@ -133,7 +133,8 @@ page containing embedded instructions is reported as a finding rather than obeye
 | `/mmm-recommend-controls` | External-factor recommendations |
 | `/mmm-recommend-priors` | Half-life priors, ROI priors, per-channel structure |
 | `/mmm-build` | Compile the spec into the target framework |
-| `/mmm-fit` | Prior PC → calibration → MCMC → posterior PC → save |
+| `/mmm-fit` | pymc-marketing and/or Meridian (own env), same holdout, framework-neutral `results.json` |
+| `/mmm-compare` | Frameworks side by side: holdout error, convergence, where they agree and disagree per channel |
 | `/mmm-diagnose` | Convergence, baseline, generalisation, plausibility |
 | `/mmm-improve` | Tournament + refinement loop |
 | `/mmm-experiment-plan` | Power analysis and the sequenced experiment roadmap |
