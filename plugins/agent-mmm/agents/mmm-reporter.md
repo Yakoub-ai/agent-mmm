@@ -163,7 +163,13 @@ target_unit:
   cfo.md      # CFO / Finance report
   mops.md     # Marketing Ops / channel manager report
   ds.md       # Data Science technical report
+  summary.md        # numbers + findings across every framework fitted
+  mmm_report.html   # interactive, self-contained (no internet needed); safe to email
+  figures/<run_id>/*.png, figures/comparison/*.png   # for decks and documents
 ```
+
+The visual outputs come from each run's `results.json` via `agent_mmm.charts.build_report`
+(step 5 of `/mmm-report`). Use the PNGs in decks; send the HTML when the reader wants to explore.
 
 ---
 

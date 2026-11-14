@@ -1,57 +1,21 @@
 ---
-description: Show the status of the current MMM workspace — what's been done, what's next.
+description: Show where an MMM project stands — project type, environment, data, each pipeline stage's status, stale outputs and what comes next. Read-only; /mmm-run uses the same scan to continue the work.
 ---
 
-# MMM Workspace Status
+# MMM Status
 
-Check the current state of `./mmm-workspace/` and report what has been completed and what remains.
+1. Run the scan (read-only):
+   ```bash
+   python3 -I "${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}/lib/agent_mmm/project_scan.py" scan
+   ```
 
-## Step 1: List workspace contents
+2. If `mmm-workspace/leaderboard.json` exists, show the top 3 runs and their scores. For the
+   latest run in `mmm-workspace/runs/`, show the key figures from `metrics.json`.
 
-Run: `ls -la ./mmm-workspace/ 2>/dev/null || echo "No workspace found"`
+3. Summarise in a few lines:
+   > **Project:** greenfield/brownfield, and why
+   > **Done:** stages passed or skipped
+   > **Needs attention:** blocked or stale stages, open questions
+   > **Next:** the scan's next stage and its command
 
-## Step 2: Check spec.yaml
-
-If `./mmm-workspace/spec.yaml` exists, read it and display:
-- `company_name`
-- `target_column` and `target_unit.label`
-- number of channels (count entries in `channels` list)
-- `mmm_type` (greenfield / brownfield)
-- `data_path`
-
-If spec.yaml does not exist, note that intake has not been run yet.
-
-## Step 3: Check completed runs
-
-List any completed runs in `./mmm-workspace/runs/`:
-
-Run: `ls ./mmm-workspace/runs/ 2>/dev/null || echo "No runs found"`
-
-For each run directory found, check if `metrics.json` is present and show the run ID alongside its key metrics (e.g. R², MAPE, LOO-IC if present).
-
-## Step 4: Check leaderboard
-
-If `./mmm-workspace/leaderboard.json` exists, read it and show the top 3 runs with their scores.
-
-## Step 5: Check generated reports
-
-Run: `ls ./mmm-workspace/reports/ 2>/dev/null || echo "No reports found"`
-
-List any generated report files.
-
-## Step 6: Summary
-
-Tell the user:
-
-> **What's done:** [list completed artifacts — spec, runs, reports, or "Nothing yet"]
->
-> **What's next:** [based on what's missing, suggest the next command — see logic below]
-
-Next-step logic:
-- No spec.yaml → suggest `/mmm-intake-quick` or `/mmm-intake`
-- spec.yaml exists, no runs → suggest `/mmm-analyze-data`, then `/mmm-recommend-controls`, then `/mmm-build`
-- Runs exist, no leaderboard → suggest `/mmm-improve`
-- Runs exist, no reports → suggest `/mmm-report cmo` or `/mmm-report ds`
-- Everything present → suggest reviewing the leaderboard and sharing reports
-
-> **Full workflow:** `/mmm-intake` → `/mmm-analyze-data` → `/mmm-recommend-controls` → `/mmm-recommend-priors` → `/mmm-build` → `/mmm-fit` → `/mmm-diagnose` → `/mmm-improve` → `/mmm-report`
+4. Offer `/mmm-run` to continue from there. Do not start the next stage from this command.

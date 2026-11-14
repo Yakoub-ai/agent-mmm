@@ -22,8 +22,10 @@ channel does nothing", and budget moves on evidence that was never there.
 2. Measure the noise from the data — do not assume it:
 
    ```bash
-   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-.}"
-   python3 - "$PLUGIN_ROOT" <<'PY'
+   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}"
+   PY="${MMM_PYTHON:-.venv-mmm/bin/python}"
+   [ -x "$PY" ] || { echo "No MMM environment found. Run /mmm-setup first."; exit 1; }
+   "$PY" -P - "$PLUGIN_ROOT" <<'PY'
    import sys, pathlib
    sys.path.insert(0, str(pathlib.Path(sys.argv[1]) / "lib"))
    import pandas as pd
@@ -44,8 +46,10 @@ channel does nothing", and budget moves on evidence that was never there.
 3. Build the roadmap:
 
    ```bash
-   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-.}"
-   python3 - "$PLUGIN_ROOT" <<'PY'
+   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}"
+   PY="${MMM_PYTHON:-.venv-mmm/bin/python}"
+   [ -x "$PY" ] || { echo "No MMM environment found. Run /mmm-setup first."; exit 1; }
+   "$PY" -P - "$PLUGIN_ROOT" <<'PY'
    import sys, pathlib, json
    sys.path.insert(0, str(pathlib.Path(sys.argv[1]) / "lib"))
    from agent_mmm.experiments import ChannelTestCandidate, build_roadmap, render_roadmap

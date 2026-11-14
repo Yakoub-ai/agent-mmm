@@ -1,5 +1,5 @@
 ---
-description: Generate stakeholder reports for the best MMM run. Supports cmo, cfo, mops, ds, or all.
+description: Generate stakeholder reports for the best MMM run (cmo, cfo, mops, ds, or all), plus the visual report — PNG charts, a self-contained interactive HTML report and a markdown summary, covering every framework fitted.
 ---
 
 # MMM Stakeholder Report
@@ -32,12 +32,11 @@ Generate reports for one or all stakeholder personas.
 
 4. Run the appropriate report generators:
    ```bash
-   python3 - <<'EOF'
+   PY="${MMM_PYTHON:-.venv-mmm/bin/python}"
+   [ -x "$PY" ] || { echo "No MMM environment found. Run /mmm-setup first."; exit 1; }
+   "$PY" -P - "${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}" <<'EOF'
    import sys, pathlib, json
-   home = pathlib.Path.home()
-   for r in [home / '.claude', home / '.config/claude']:
-       for p in r.rglob('agent_mmm/__init__.py'):
-           sys.path.insert(0, str(p.parent.parent)); break
+   sys.path.insert(0, str(pathlib.Path(sys.argv[1]) / "lib"))
 
    from agent_mmm.spec import load_spec
    from agent_mmm.reports import (
@@ -77,6 +76,38 @@ Generate reports for one or all stakeholder personas.
    EOF
    ```
 
-5. Display each generated report or offer to open them.
+5. Build the visual report from every run with `results.json` (the latest per framework),
+   including the comparison when there are two or more:
+   ```bash
+   PY="${MMM_PYTHON:-.venv-mmm/bin/python}"
+   [ -x "$PY" ] || { echo "No MMM environment found. Run /mmm-setup first."; exit 1; }
+   "$PY" -P - "${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}" <<'EOF'
+   import sys, pathlib
+   sys.path.insert(0, str(pathlib.Path(sys.argv[1]) / "lib"))
+   from agent_mmm.results_schema import load_all
+   from agent_mmm.compare import compare
+   from agent_mmm.charts import build_report
 
-6. Explain key findings to the user in plain language tailored to the requested persona.
+   latest = {}
+   for r in load_all("mmm-workspace/runs"):
+       latest[r.framework] = r
+   results = list(latest.values())
+   if not results:
+       print("No results.json found. Run /mmm-fit first."); raise SystemExit(1)
+   comp = compare(results) if len(results) > 1 else None
+   from agent_mmm.budget import load_plans
+   run_ids = {r.run_id for r in results}
+   plans = [p for p in load_plans(".") if p.run_id in run_ids] or None   # from /mmm-budget, if run
+   out = build_report(results, comp, base=".", budget_plans=plans)
+   print(f"HTML report: {out['html']}")
+   print(f"Summary:     {out['markdown']}")
+   for group, paths in out["figures"].items():
+       print(f"{group}: {len(paths)} charts")
+   EOF
+   ```
+   The HTML file is self-contained (no internet needed, nothing loaded from outside) and safe to
+   email. If matplotlib or plotly is missing, re-run `/mmm-setup` (they are in the `report` extra).
+
+6. Display each generated report or offer to open them.
+
+7. Explain key findings to the user in plain language tailored to the requested persona.

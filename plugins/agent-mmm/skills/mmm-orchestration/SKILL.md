@@ -24,15 +24,15 @@ output.
 | 1 | Discover the raw data | `mmm-data-engineer` | Every blocking question answered by the user |
 | 2 | Intake and spec | you | Roles agreed per column; target and units agreed |
 | 3 | Build the dataset | `mmm-data-engineer` | Taxonomy ≥99% of spend; finance reconciled and signed off |
-| 4 | Audit | `mmm-data-engineer` | No blocking audit errors; tier known and accepted |
+| 4 | Audit and improvement plan | `mmm-data-engineer` | No blocking audit errors; tier known and accepted; critical tips fixed or accepted |
 | 5 | Research | `mmm-researcher` | Findings cited, with strengths labelled |
 | 6 | Causal specification | you | Every variable's role justified; no mediators as controls |
 | 7 | Priors and prior predictive | `mmm-modeler` | Simulated outcomes physically possible |
-| 8 | Fit | `mmm-modeler` | Sampler completed; artefacts written |
+| 8 | Fit (one or more frameworks) | `mmm-modeler` | Sampler completed; `results.json` per framework |
 | 9 | Diagnose | `mmm-diagnostician` | Convergence clean; baseline sane |
-| 10 | Validate | `mmm-diagnostician` | Out-of-sample and refutation results in hand |
+| 10 | Validate and compare | `mmm-diagnostician` | Out-of-sample results in hand; framework disagreements named |
 | 11 | Improve | `mmm-improver` | Score plateaued, or the budget for iteration is spent |
-| 12 | Interpret | you | Contributions with intervals; marginal separated from average |
+| 12 | Interpret and budget scenarios | you | Contributions with intervals; guardrail ladder presented with a reasoned recommendation |
 | 13 | Experiment roadmap | `mmm-experiment-designer` | At least one viable, powered test identified |
 | 14 | Deliver | `mmm-reporter` | Reports and decks per audience; asks have owners |
 
@@ -116,9 +116,15 @@ presented as a finding is a fabrication, however good the model is otherwise.
 
 ## Running the whole thing
 
-The `/mmm-run` command walks these stages and stops at every gate. It is deliberately
-interruptible: most gates are conversations, and a pipeline that runs to completion without
-stopping has almost certainly guessed at something.
+`/mmm-run` is the single entry point. Every session it **scans** the project
+(`project_scan.py scan`: greenfield or brownfield, environment, data, existing models, stage
+status, stale outputs), **summarises** what it found, **asks** the questions only the user
+can answer, **executes** the next stage, and **records** the gate decision in
+`mmm-workspace/progress.json` (`project_scan.py record`) so the next session resumes there.
+A recorded gate reopens as stale when its inputs change.
+
+It is deliberately interruptible: most gates are conversations, and a pipeline that runs to
+completion without stopping has almost certainly guessed at something.
 
 **Report progress against gates, not against tasks.** "Blocked at gate 3: 4% of spend is
 unmapped, here are the campaign names" is useful. "Working on data preparation" is not.

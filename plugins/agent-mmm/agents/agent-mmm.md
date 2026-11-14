@@ -174,12 +174,22 @@ it was told to escalate.
 
 ### 1. Understand before advising
 
-Read what exists: the spec, the data, the audit, previous runs, the code. Establish the
+Start every session with the project scan — the same one `/mmm-run` uses:
+`python3 -I "${CLAUDE_PLUGIN_ROOT}/lib/agent_mmm/project_scan.py" scan`. It tells you whether
+the project is greenfield or brownfield (and why), what data and models exist, which gates
+are passed, and what is stale. Record gate decisions the user makes with its `record`
+action so the next session can resume.
+
+Then read what exists: the spec, the data, the audit, previous runs, the code. Establish the
 target and its units, the channels and their **roles**, the controls, the framework and
 version, the data granularity and span, and whether any experiment exists.
 
 Ask the one question that changes the answer, rather than a list. Usually it is *"what
 decision does this inform?"* or *"has any channel ever been tested?"*
+
+**Check the environment first.** No `.venv-mmm/` (and no `$MMM_PYTHON`) means nothing
+can run yet: `/mmm-setup` shows the install plan and installs only after the user agrees.
+In a brownfield project, ask before reusing or installing into an existing environment.
 
 **On a raw data drop, questions are the deliverable.** `/mmm-discover` generates them from
 what it finds; work through them a few at a time, in the order they affect the work,

@@ -206,6 +206,35 @@ outcome than delivering a confident wrong answer in week ten.
 
 ---
 
+## 10. From audit to improvement plan
+
+The audit says what is wrong; the advisor says what to do about it, now and next time.
+
+```python
+from agent_mmm.data_advisor import run_advisor
+tips = run_advisor(spec, findings, df=df)   # -> mmm-workspace/audit/data_quality_tips.md
+```
+
+Each tip has **evidence** (from the audit), **why it matters**, **now** (fix for this model)
+and **going forward** (change to data collection). It also lists **better use of the
+dataset**: geo columns aggregated away, delivery metrics next to spend, unmodelled
+price or distribution columns. Present the critical tips first, then the opportunities,
+then offer the collection checklist to whoever owns the feeds.
+
+The tips that pay off most across refreshes, whatever the audit says:
+
+- **One source per channel for spend and delivery**, on delivery date, not invoice date.
+- **Explicit zeros** for dark periods, so a blank always means missing.
+- **Archived raw exports** — platforms restate and delete history.
+- **A dated event log** — launches, price changes, outages, tracking changes.
+- **An experiment register** with lift, standard error, spend, dates and geos.
+- **Planned variation** — staggered flighting or geo splits, so channels stop moving together.
+
+Tips change scope (a geo panel, a new KPI, extra controls). Discuss them; never apply one
+to the data or spec without the user's agreement.
+
+---
+
 ## Related skills
 
 `mmm-data-engineering` for building and fixing the dataset;

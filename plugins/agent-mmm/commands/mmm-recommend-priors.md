@@ -12,20 +12,11 @@ Generate channel-specific Bayesian prior parameters using the prior recommendati
 
 2. Run the prior engine:
    ```bash
-   python3 - <<'EOF'
+   PY="${MMM_PYTHON:-.venv-mmm/bin/python}"
+   [ -x "$PY" ] || { echo "No MMM environment found. Run /mmm-setup first."; exit 1; }
+   "$PY" -P - "${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}" <<'EOF'
    import sys, pathlib
-
-   home = pathlib.Path.home()
-   for search_root in [home / '.claude', home / '.config/claude']:
-       for p in search_root.rglob('agent_mmm/__init__.py'):
-           sys.path.insert(0, str(p.parent.parent))
-           break
-
-   try:
-       import agent_mmm
-   except ImportError:
-       print("ERROR: agent_mmm library not found.")
-       sys.exit(1)
+   sys.path.insert(0, str(pathlib.Path(sys.argv[1]) / "lib"))
 
    from agent_mmm.spec import load_spec
    from agent_mmm.prior_engine import recommend_priors

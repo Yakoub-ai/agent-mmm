@@ -1,93 +1,58 @@
 ---
-description: Run automated data quality audit on the dataset defined in spec.yaml. Produces audit.json and audit_report.md in ./mmm-workspace/audit/.
+description: Run the data quality audit on the dataset in spec.yaml, then turn it into a prioritised improvement plan (fix now + improve data collection going forward) and ideas for better use of the dataset. Writes to ./mmm-workspace/audit/.
 ---
 
-# MMM Data Audit
-
-Run the automated data quality audit using the agent_mmm library.
+# MMM Data Audit and Improvement Plan
 
 ## Steps
 
-1. Check that `./mmm-workspace/spec.yaml` exists. If not, tell the user: "Run `/mmm-intake` first to create the project spec."
+1. Check that `./mmm-workspace/spec.yaml` exists. If not: "Run `/mmm-intake` first to create
+   the project spec."
 
-2. Find the `agent_mmm` library. It's at the path of the installed `agent-mmm` plugin. To locate it:
+2. Run the audit and the advisor:
    ```bash
-   # The plugin is installed via Claude Code marketplace. The lib path is relative to this command file.
-   # Try: find the directory containing this command file, then go up to the plugin root and into lib/
-   python3 -c "
+   PY="${MMM_PYTHON:-.venv-mmm/bin/python}"
+   [ -x "$PY" ] || { echo "No MMM environment found. Run /mmm-setup first."; exit 1; }
+   "$PY" -P - "${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}" <<'EOF'
    import sys, pathlib
-   # Try to locate agent_mmm via common plugin paths
-   candidates = [
-       pathlib.Path.home() / '.claude/plugins',
-       pathlib.Path.home() / '.claude/extensions',
-   ]
-   for c in candidates:
-       for p in c.rglob('agent_mmm/__init__.py'):
-           print(p.parent.parent)
-           break
-   "
-   ```
-   
-   Alternatively, the library can be imported if the user's environment has the plugin installed. Try:
-   ```bash
-   python3 -c "import agent_mmm; print('found')" 2>/dev/null || echo "not installed"
-   ```
-   
-   If neither works, construct the path from the plugin location (which is where this command file lives). The command file is in `{plugin_root}/commands/mmm-analyze-data.md` and the library is at `{plugin_root}/lib/`.
-
-3. Run the audit:
-   ```bash
-   python3 - <<'EOF'
-   import sys, pathlib
-
-   # Add lib/ to path — derive from this script's location by finding the plugin root
-   # The plugin root contains pyproject.toml; search upward from cwd and known paths
-   import os
-   candidates = []
-   # Check if we can find agent_mmm already
-   try:
-       import agent_mmm
-       lib_found = True
-   except ImportError:
-       lib_found = False
-       # Try common plugin cache locations
-       home = pathlib.Path.home()
-       for search_root in [home / '.claude', home / '.config/claude']:
-           for p in search_root.rglob('agent_mmm/__init__.py'):
-               sys.path.insert(0, str(p.parent.parent))
-               lib_found = True
-               break
-           if lib_found:
-               break
-
-   if not lib_found:
-       print("ERROR: agent_mmm library not found. Check plugin installation.")
-       sys.exit(1)
+   sys.path.insert(0, str(pathlib.Path(sys.argv[1]) / "lib"))
 
    from agent_mmm.spec import load_spec
+   from agent_mmm.utils.io import load_data
    from agent_mmm.data_audit import run_audit
+   from agent_mmm.data_advisor import run_advisor
 
    spec = load_spec("./mmm-workspace/spec.yaml")
-   findings = run_audit(spec, base=".")
-   
-   tier = findings["summary"]["data_quality_tier"]
-   print(f"\nData Quality Tier: {tier}")
-   print(f"Rows: {findings['summary']['rows']} | Channels: {findings['summary']['channels']}")
-   if findings['errors']:
-       print(f"\nErrors ({len(findings['errors'])}):")
-       for e in findings['errors']:
-           print(f"  ❌ {e}")
-   if findings['warnings']:
-       print(f"\nWarnings ({len(findings['warnings'])}):")
-       for w in findings['warnings']:
-           print(f"  ⚠️  {w}")
-   print(f"\nFull report: ./mmm-workspace/audit/audit_report.md")
+   df = load_data(spec.data_path)
+   findings = run_audit(spec, base=".", df=df)
+   tips = run_advisor(spec, findings, df=df, base=".")
+
+   s = findings["summary"]
+   print(f"Data Quality Tier: {s['data_quality_tier']}")
+   print(f"Rows: {s['rows']} | Channels: {s['channels']} | "
+         f"Errors: {s['total_errors']} | Warnings: {s['total_warnings']}")
+   print("\nScorecard:")
+   for area, status in tips.scorecard.items():
+       print(f"  {area:32s} {status}")
+   print(f"\nTips: {len(tips.tips)} | Opportunities: {len(tips.opportunities)}")
+   print("Reports: mmm-workspace/audit/audit_report.md, mmm-workspace/audit/data_quality_tips.md")
    EOF
    ```
 
-4. Read and display the audit report: `cat ./mmm-workspace/audit/audit_report.md`
+3. Read both reports. Present them in this order:
+   - **Verdict and blocking issues** from `audit_report.md`.
+   - **Top 3-5 tips** from `data_quality_tips.md`, critical first. For each give the
+     evidence, the fix for this model, and the change to data collection.
+   - **Better use of this dataset**: unused columns, geo detail, delivery metrics.
+   - Offer the **data collection checklist** as something the user can hand to whoever
+     owns the data feeds.
 
-5. Based on findings, advise:
-   - If FAIL (errors): tell the user what they must fix before proceeding
-   - If WARN: explain the warnings and suggest whether they're blocking or can be addressed via controls/priors
-   - If PASS: "✅ Data looks good — run `/mmm-recommend-controls` next"
+4. Advise on next steps:
+   - **FAIL** → what must be fixed before modelling. Offer `/mmm-prepare-data` for the
+     fixes that are mechanical; the rest need the data owner.
+   - **WARN** → which warnings are handled by controls/priors and which limit what the
+     model can claim.
+   - **PASS** → "Data looks good — run `/mmm-recommend-controls` next."
+
+Do not edit the data or the spec based on a tip without the user's agreement. Tips about
+geo panels, unused columns and alternative KPIs change the model's scope; discuss them.

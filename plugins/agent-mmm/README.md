@@ -35,7 +35,8 @@ It covers the full lifecycle:
     pre-registered expectations
 12. **Deliver** — CMO, CFO, Marketing Ops and Data Science reports and presentation decks
 
-The whole sequence runs with `/mmm-run`, which stops at every gate.
+The whole sequence runs with `/mmm-run`: it scans the project (greenfield or brownfield), asks
+the questions only you can answer, runs each stage, stops at every gate, and resumes where you left off.
 
 ### What it will not do
 
@@ -90,12 +91,9 @@ channel has ever been tested.
 Discover → agent-mmm → Install
 ```
 
-For the Python library:
-
-```bash
-pip install -e "plugins/agent-mmm[pymc]"     # executable pymc-marketing backend
-pip install -e "plugins/agent-mmm"           # spec, audit, prep and code generation only
-```
+For the Python library, run `/mmm-setup` in your project. It shows the install plan, creates
+`.venv-mmm` (or `.venv-meridian`) with uv, pyenv or venv, writes a lock file and checks the
+environment. Profiles: `core` (data work only), `pymc` (default), `meridian`.
 
 Requires Python ≥ 3.12 (pymc-marketing 1.x does).
 
@@ -123,22 +121,25 @@ page containing embedded instructions is reported as a finding rather than obeye
 
 | Command | Does |
 |---|---|
-| `/mmm-run` | The whole pipeline, stopping at every gate |
+| `/mmm-setup` | Create or verify the project environment (uv, pyenv or venv); checks client data is git-ignored |
+| `/mmm-run` | **Start here.** Scans the project, asks what only you can answer, runs each stage step by step, and resumes where you left off |
 | `/mmm-discover` | Profile a folder of raw exports; produce the blocking questions |
 | `/mmm-map-channels` | Campaign names → channels, with coverage and conflict reporting |
 | `/mmm-reconcile` | Modelled spend vs the finance ledger, with the variance pattern named |
 | `/mmm-intake` | Full intake → `spec.yaml` |
 | `/mmm-intake-quick` | Six questions, enough to run the audit |
 | `/mmm-prepare-data` | Aggregate, reindex, impute with explicit rules, add calendar features |
-| `/mmm-analyze-data` | Data audit with modelling consequences |
+| `/mmm-analyze-data` | Data audit plus a prioritised improvement plan and data collection checklist |
 | `/mmm-recommend-controls` | External-factor recommendations |
 | `/mmm-recommend-priors` | Half-life priors, ROI priors, per-channel structure |
 | `/mmm-build` | Compile the spec into the target framework |
-| `/mmm-fit` | Prior PC → calibration → MCMC → posterior PC → save |
+| `/mmm-fit` | pymc-marketing and/or Meridian (own env), same holdout, framework-neutral `results.json` |
+| `/mmm-budget` | Guardrail ladder: what small, moderate and large reallocations buy at several budgets, with uncertainty and a reasoned recommendation |
+| `/mmm-compare` | Frameworks side by side: holdout error, convergence, where they agree and disagree per channel |
 | `/mmm-diagnose` | Convergence, baseline, generalisation, plausibility |
 | `/mmm-improve` | Tournament + refinement loop |
 | `/mmm-experiment-plan` | Power analysis and the sequenced experiment roadmap |
-| `/mmm-report` | CMO / CFO / MOps / DS reports |
+| `/mmm-report` | CMO / CFO / MOps / DS reports, plus PNG charts, a self-contained interactive HTML report and `summary.md` |
 | `/mmm-present` | Stakeholder decks: narrative, charts, speaker notes, objections |
 | `/mmm-research` | Benchmarks and methodology, under the untrusted-content rules |
 | `/mmm-status` | Where the project is |
