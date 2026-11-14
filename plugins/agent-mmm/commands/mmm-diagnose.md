@@ -16,12 +16,11 @@ Run the full diagnostic suite on a completed run.
 
 4. Run diagnostics:
    ```bash
-   python3 - <<'EOF'
+   PY="${MMM_PYTHON:-.venv-mmm/bin/python}"
+   [ -x "$PY" ] || { echo "No MMM environment found. Run /mmm-setup first."; exit 1; }
+   "$PY" -P - "${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}" <<'EOF'
    import sys, pathlib, json, os
-   home = pathlib.Path.home()
-   for r in [home / '.claude', home / '.config/claude']:
-       for p in r.rglob('agent_mmm/__init__.py'):
-           sys.path.insert(0, str(p.parent.parent)); break
+   sys.path.insert(0, str(pathlib.Path(sys.argv[1]) / "lib"))
 
    from agent_mmm.diagnostics import run_diagnostics
 

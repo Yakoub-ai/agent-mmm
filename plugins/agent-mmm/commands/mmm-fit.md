@@ -16,12 +16,11 @@ Run the full fit pipeline: build → prior predictive check → lift-test calibr
 
 3. Run the fit:
    ```bash
-   python3 - <<'EOF'
+   PY="${MMM_PYTHON:-.venv-mmm/bin/python}"
+   [ -x "$PY" ] || { echo "No MMM environment found. Run /mmm-setup first."; exit 1; }
+   "$PY" -P - "${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}" <<'EOF'
    import sys, pathlib, json
-   home = pathlib.Path.home()
-   for r in [home / '.claude', home / '.config/claude']:
-       for p in r.rglob('agent_mmm/__init__.py'):
-           sys.path.insert(0, str(p.parent.parent)); break
+   sys.path.insert(0, str(pathlib.Path(sys.argv[1]) / "lib"))
 
    import logging
    logging.basicConfig(level=logging.INFO)

@@ -18,8 +18,10 @@ it is usually done once by hand and never checked again.
 2. Propose rules and report coverage:
 
    ```bash
-   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-.}"
-   python3 - "$PLUGIN_ROOT" <<'PY'
+   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}"
+   PY="${MMM_PYTHON:-.venv-mmm/bin/python}"
+   [ -x "$PY" ] || { echo "No MMM environment found. Run /mmm-setup first."; exit 1; }
+   "$PY" -P - "$PLUGIN_ROOT" <<'PY'
    import sys, pathlib, json
    sys.path.insert(0, str(pathlib.Path(sys.argv[1]) / "lib"))
    import pandas as pd

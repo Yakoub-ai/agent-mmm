@@ -16,10 +16,12 @@ decides nothing.
 2. Run discovery:
 
    ```bash
-   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname "$(dirname "$0")")}"
+   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}"
+   PY="${MMM_PYTHON:-.venv-mmm/bin/python}"
+   [ -x "$PY" ] || { echo "No MMM environment found. Run /mmm-setup first."; exit 1; }
    RAW_DIR="${1:-data/raw}"
 
-   python3 - "$PLUGIN_ROOT" "$RAW_DIR" <<'PY'
+   "$PY" -P - "$PLUGIN_ROOT" "$RAW_DIR" <<'PY'
    import sys, pathlib, json
    plugin_root, raw_dir = sys.argv[1], sys.argv[2]
 

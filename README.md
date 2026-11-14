@@ -23,7 +23,7 @@ argument from correlation).
 
 **Agents** — `agent-mmm`, `mmm-modeler`, `mmm-diagnostician`, `mmm-improver`, `mmm-reporter`
 
-**Commands** — `/mmm-intake`, `/mmm-intake-quick`, `/mmm-prepare-data`, `/mmm-analyze-data`,
+**Commands** — `/mmm-setup`, `/mmm-intake`, `/mmm-intake-quick`, `/mmm-prepare-data`, `/mmm-analyze-data`,
 `/mmm-recommend-controls`, `/mmm-recommend-priors`, `/mmm-build`, `/mmm-fit`,
 `/mmm-diagnose`, `/mmm-improve`, `/mmm-report`, `/mmm-status`
 
@@ -60,4 +60,4 @@ and reference guides for pymc-marketing, Meridian, Robyn and framework selection
 
 - Claude Code with plugin support
 - Python 3.12+ for the `agent_mmm` library
-- `pip install -e "plugins/agent-mmm[pymc]"` for the executable pymc-marketing backend
+- Run `/mmm-setup` in your project to create the Python environment (uv, pyenv or venv)

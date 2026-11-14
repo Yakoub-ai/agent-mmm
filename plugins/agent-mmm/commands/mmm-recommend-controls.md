@@ -14,21 +14,11 @@ Generate control variable recommendations tailored to your industry and region.
 
 3. Run the controls engine:
    ```bash
-   python3 - <<'EOF'
+   PY="${MMM_PYTHON:-.venv-mmm/bin/python}"
+   [ -x "$PY" ] || { echo "No MMM environment found. Run /mmm-setup first."; exit 1; }
+   "$PY" -P - "${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}" <<'EOF'
    import sys, pathlib, json
-
-   # Find agent_mmm lib
-   home = pathlib.Path.home()
-   for search_root in [home / '.claude', home / '.config/claude']:
-       for p in search_root.rglob('agent_mmm/__init__.py'):
-           sys.path.insert(0, str(p.parent.parent))
-           break
-
-   try:
-       import agent_mmm
-   except ImportError:
-       print("ERROR: agent_mmm library not found. Check plugin installation.")
-       sys.exit(1)
+   sys.path.insert(0, str(pathlib.Path(sys.argv[1]) / "lib"))
 
    from agent_mmm.spec import load_spec
    from agent_mmm.controls_engine import recommend_controls

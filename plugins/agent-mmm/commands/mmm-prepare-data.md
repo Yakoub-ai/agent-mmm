@@ -19,12 +19,11 @@ rate. Nothing here guesses on the user's behalf without saying so.
    confirm or amend:
 
    ```bash
-   python3 - <<'EOF'
+   PY="${MMM_PYTHON:-.venv-mmm/bin/python}"
+   [ -x "$PY" ] || { echo "No MMM environment found. Run /mmm-setup first."; exit 1; }
+   "$PY" -P - "${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}" <<'EOF'
    import sys, pathlib, json
-   home = pathlib.Path.home()
-   for r in [home / '.claude', home / '.config/claude']:
-       for p in r.rglob('agent_mmm/__init__.py'):
-           sys.path.insert(0, str(p.parent.parent)); break
+   sys.path.insert(0, str(pathlib.Path(sys.argv[1]) / "lib"))
 
    from agent_mmm.spec import load_spec
    from agent_mmm.utils.io import load_data
@@ -52,12 +51,11 @@ rate. Nothing here guesses on the user's behalf without saying so.
 3. Run the pipeline with the confirmed strategies:
 
    ```bash
-   python3 - <<'EOF'
+   PY="${MMM_PYTHON:-.venv-mmm/bin/python}"
+   [ -x "$PY" ] || { echo "No MMM environment found. Run /mmm-setup first."; exit 1; }
+   "$PY" -P - "${CLAUDE_PLUGIN_ROOT:?agent-mmm plugin root is not set}" <<'EOF'
    import sys, pathlib
-   home = pathlib.Path.home()
-   for r in [home / '.claude', home / '.config/claude']:
-       for p in r.rglob('agent_mmm/__init__.py'):
-           sys.path.insert(0, str(p.parent.parent)); break
+   sys.path.insert(0, str(pathlib.Path(sys.argv[1]) / "lib"))
 
    from agent_mmm.spec import load_spec
    from agent_mmm.data_prep import prepare_dataset

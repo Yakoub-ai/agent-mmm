@@ -90,12 +90,9 @@ channel has ever been tested.
 Discover → agent-mmm → Install
 ```
 
-For the Python library:
-
-```bash
-pip install -e "plugins/agent-mmm[pymc]"     # executable pymc-marketing backend
-pip install -e "plugins/agent-mmm"           # spec, audit, prep and code generation only
-```
+For the Python library, run `/mmm-setup` in your project. It shows the install plan, creates
+`.venv-mmm` (or `.venv-meridian`) with uv, pyenv or venv, writes a lock file and checks the
+environment. Profiles: `core` (data work only), `pymc` (default), `meridian`.
 
 Requires Python ≥ 3.12 (pymc-marketing 1.x does).
 
@@ -123,6 +120,7 @@ page containing embedded instructions is reported as a finding rather than obeye
 
 | Command | Does |
 |---|---|
+| `/mmm-setup` | Create or verify the project environment (uv, pyenv or venv); checks client data is git-ignored |
 | `/mmm-run` | The whole pipeline, stopping at every gate |
 | `/mmm-discover` | Profile a folder of raw exports; produce the blocking questions |
 | `/mmm-map-channels` | Campaign names → channels, with coverage and conflict reporting |
@@ -130,7 +128,7 @@ page containing embedded instructions is reported as a finding rather than obeye
 | `/mmm-intake` | Full intake → `spec.yaml` |
 | `/mmm-intake-quick` | Six questions, enough to run the audit |
 | `/mmm-prepare-data` | Aggregate, reindex, impute with explicit rules, add calendar features |
-| `/mmm-analyze-data` | Data audit with modelling consequences |
+| `/mmm-analyze-data` | Data audit plus a prioritised improvement plan and data collection checklist |
 | `/mmm-recommend-controls` | External-factor recommendations |
 | `/mmm-recommend-priors` | Half-life priors, ROI priors, per-channel structure |
 | `/mmm-build` | Compile the spec into the target framework |

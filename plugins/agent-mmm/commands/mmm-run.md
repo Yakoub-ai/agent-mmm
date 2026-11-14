@@ -21,6 +21,9 @@ here are the campaign names" is useful. "Working on data preparation" is not.
 
 ## The stages
 
+Before stage 0, check the environment: if `.venv-mmm/` (or `$MMM_PYTHON`) is missing, run
+`/mmm-setup`. Every later command runs in it.
+
 **0 — Frame the decision.** *You.* What decision does this inform, by when, and what would
 change if the answer came back differently? This sets the required precision, the channel
 granularity, and whether an MMM is the right instrument at all.
@@ -40,7 +43,8 @@ adstock is a category error no diagnostic catches.*
 → *Gate: taxonomy covers ≥99% of spend; finance reconciled and signed off by a named person.*
 
 **4 — Audit.** *Dispatch `mmm-data-engineer`,* or run `/mmm-analyze-data`.
-→ *Gate: no blocking errors; the quality tier is known and the user has accepted it.*
+→ *Gate: no blocking errors; the quality tier is known and the user has accepted it; the
+critical tips in `data_quality_tips.md` are fixed or explicitly accepted.*
 
 **5 — Research.** *Dispatch `mmm-researcher`* when a decision would otherwise rest on
 memory: category benchmarks, framework behaviour by version, prior art on a hard channel.

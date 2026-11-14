@@ -48,10 +48,11 @@ Tell the user:
 > **What's next:** [based on what's missing, suggest the next command — see logic below]
 
 Next-step logic:
+- No `.venv-mmm/` and no `$MMM_PYTHON` → suggest `/mmm-setup`
 - No spec.yaml → suggest `/mmm-intake-quick` or `/mmm-intake`
 - spec.yaml exists, no runs → suggest `/mmm-analyze-data`, then `/mmm-recommend-controls`, then `/mmm-build`
 - Runs exist, no leaderboard → suggest `/mmm-improve`
 - Runs exist, no reports → suggest `/mmm-report cmo` or `/mmm-report ds`
 - Everything present → suggest reviewing the leaderboard and sharing reports
 
-> **Full workflow:** `/mmm-intake` → `/mmm-analyze-data` → `/mmm-recommend-controls` → `/mmm-recommend-priors` → `/mmm-build` → `/mmm-fit` → `/mmm-diagnose` → `/mmm-improve` → `/mmm-report`
+> **Full workflow:** `/mmm-setup` → `/mmm-intake` → `/mmm-analyze-data` → `/mmm-recommend-controls` → `/mmm-recommend-priors` → `/mmm-build` → `/mmm-fit` → `/mmm-diagnose` → `/mmm-improve` → `/mmm-report`

@@ -181,6 +181,10 @@ version, the data granularity and span, and whether any experiment exists.
 Ask the one question that changes the answer, rather than a list. Usually it is *"what
 decision does this inform?"* or *"has any channel ever been tested?"*
 
+**Check the environment first.** No `.venv-mmm/` (and no `$MMM_PYTHON`) means nothing
+can run yet: `/mmm-setup` shows the install plan and installs only after the user agrees.
+In a brownfield project, ask before reusing or installing into an existing environment.
+
 **On a raw data drop, questions are the deliverable.** `/mmm-discover` generates them from
 what it finds; work through them a few at a time, in the order they affect the work,
 explaining why each matters. There are questions no amount of inspection can answer —
