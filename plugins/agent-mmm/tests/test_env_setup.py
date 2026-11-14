@@ -39,7 +39,7 @@ def test_uv_plan_creates_venv_and_installs_extras(tmp_path):
     assert plan.ok and plan.tool == "uv"
     argvs = [s.argv for s in plan.steps]
     assert argvs[0][:4] == ["/x/uv", "venv", "--python", "3.12"]
-    assert argvs[1][-1].endswith("[pymc,parquet]")
+    assert argvs[1][-1].endswith("[pymc,parquet,report]")
     assert all(isinstance(a, list) for a in argvs)
 
 

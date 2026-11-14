@@ -186,7 +186,7 @@ def test_referenced_library_symbols_exist():
     import agent_mmm.discovery, agent_mmm.experiments, agent_mmm.reconciliation
     import agent_mmm.reports.deck, agent_mmm.taxonomy
     import agent_mmm.data_audit, agent_mmm.data_advisor
-    import agent_mmm.compare, agent_mmm.results_schema, agent_mmm.fit_runner
+    import agent_mmm.compare, agent_mmm.results_schema, agent_mmm.fit_runner, agent_mmm.charts
 
     modules = {
         "agent_mmm.discovery": agent_mmm.discovery,
@@ -199,6 +199,7 @@ def test_referenced_library_symbols_exist():
         "agent_mmm.compare": agent_mmm.compare,
         "agent_mmm.results_schema": agent_mmm.results_schema,
         "agent_mmm.fit_runner": agent_mmm.fit_runner,
+        "agent_mmm.charts": agent_mmm.charts,
     }
     pattern = re.compile(r"from (agent_mmm[.\w]*) import ([^\n]+)")
     missing = []

@@ -96,7 +96,7 @@ STAGES: tuple[Stage, ...] = (
     Stage(11, "Improve", "/mmm-improve", ("leaderboard.json",)),
     Stage(12, "Interpret", "(conversation)", ()),
     Stage(13, "Experiment roadmap", "/mmm-experiment-plan", ("experiments/roadmap.md",)),
-    Stage(14, "Deliver", "/mmm-report, /mmm-present", ("reports/*.md",)),
+    Stage(14, "Deliver", "/mmm-report, /mmm-present", ("reports/*.md", "reports/mmm_report.html")),
 )
 
 # (output glob, input globs): output is stale if any input is newer.

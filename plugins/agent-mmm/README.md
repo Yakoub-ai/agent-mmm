@@ -138,7 +138,7 @@ page containing embedded instructions is reported as a finding rather than obeye
 | `/mmm-diagnose` | Convergence, baseline, generalisation, plausibility |
 | `/mmm-improve` | Tournament + refinement loop |
 | `/mmm-experiment-plan` | Power analysis and the sequenced experiment roadmap |
-| `/mmm-report` | CMO / CFO / MOps / DS reports |
+| `/mmm-report` | CMO / CFO / MOps / DS reports, plus PNG charts, a self-contained interactive HTML report and `summary.md` |
 | `/mmm-present` | Stakeholder decks: narrative, charts, speaker notes, objections |
 | `/mmm-research` | Benchmarks and methodology, under the untrusted-content rules |
 | `/mmm-status` | Where the project is |
