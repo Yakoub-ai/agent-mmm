@@ -134,6 +134,7 @@ page containing embedded instructions is reported as a finding rather than obeye
 | `/mmm-recommend-priors` | Half-life priors, ROI priors, per-channel structure |
 | `/mmm-build` | Compile the spec into the target framework |
 | `/mmm-fit` | pymc-marketing and/or Meridian (own env), same holdout, framework-neutral `results.json` |
+| `/mmm-budget` | Guardrail ladder: what small, moderate and large reallocations buy at several budgets, with uncertainty and a reasoned recommendation |
 | `/mmm-compare` | Frameworks side by side: holdout error, convergence, where they agree and disagree per channel |
 | `/mmm-diagnose` | Convergence, baseline, generalisation, plausibility |
 | `/mmm-improve` | Tournament + refinement loop |

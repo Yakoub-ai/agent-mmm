@@ -32,7 +32,7 @@ output.
 | 9 | Diagnose | `mmm-diagnostician` | Convergence clean; baseline sane |
 | 10 | Validate and compare | `mmm-diagnostician` | Out-of-sample results in hand; framework disagreements named |
 | 11 | Improve | `mmm-improver` | Score plateaued, or the budget for iteration is spent |
-| 12 | Interpret | you | Contributions with intervals; marginal separated from average |
+| 12 | Interpret and budget scenarios | you | Contributions with intervals; guardrail ladder presented with a reasoned recommendation |
 | 13 | Experiment roadmap | `mmm-experiment-designer` | At least one viable, powered test identified |
 | 14 | Deliver | `mmm-reporter` | Reports and decks per audience; asks have owners |
 

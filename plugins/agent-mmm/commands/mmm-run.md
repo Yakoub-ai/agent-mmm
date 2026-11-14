@@ -116,10 +116,12 @@ frameworks disagree on are named and carried into the experiment roadmap.*
 **11 — Improve.** *Dispatch `mmm-improver`,* or run `/mmm-improve`.
 → *Gate: the score has plateaued, or the iteration budget is spent.*
 
-**12 — Interpret.** *You.* Decomposition, contributions with intervals, marginal versus
-average, response curves and where the data stops.
+**12 — Interpret and budget scenarios.** *You,* then `/mmm-budget`. Decomposition, contributions
+with intervals, marginal versus average, response curves and where the data stops. Then the
+guardrail ladder: what small, moderate and large reallocations buy at several budgets, and which
+level is recommended and why.
 → *Gate: uncertainty travels with every number. Once a point estimate reaches a slide it is
-very hard to put the interval back.*
+very hard to put the interval back. The user has seen the ladder, not a single "optimal" plan.*
 
 **13 — Experiment roadmap.** *Dispatch `mmm-experiment-designer`,* or run
 `/mmm-experiment-plan`.

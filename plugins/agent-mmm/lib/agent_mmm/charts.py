@@ -441,7 +441,62 @@ def _channel_table(r: ModelResults) -> str:
             f"<th>{html.escape(r.return_label)}</th><th>Marginal</th></tr>" + "".join(rows) + "</table></div>")
 
 
-def build_html(results: list[ModelResults], comparison: Optional[dict] = None, title: str = "MMM results") -> str:
+def fig_ladder(plans: list) -> Any:
+    import plotly.graph_objects as go
+
+    by_run = {pl.run_id: pl for pl in plans}
+    fig = go.Figure()
+    for i, pl in enumerate(plans):
+        col = PALETTE[FRAMEWORK_SLOT.get(pl.framework, i) % len(PALETTE)]
+        ss = [s for s in pl.scenarios if s.budget_factor == 1.0]
+        off = (i - (len(plans) - 1) / 2) * 0.22
+        fig.add_trace(go.Scatter(
+            x=[s.gain["mean"] for s in ss], y=[j + off for j in range(len(ss))], mode="markers",
+            name=html.escape(f"{pl.framework} · {pl.run_id}"),
+            marker=dict(color=col, size=10, line=dict(color=SURFACE, width=1.5)),
+            customdata=[[html.escape(s.guardrail_label), s.prob_better] for s in ss],
+            error_x=dict(type="data", symmetric=False, thickness=2, width=0, color=col,
+                         array=[s.gain["p95"] - s.gain["mean"] for s in ss],
+                         arrayminus=[s.gain["mean"] - s.gain["p05"] for s in ss]),
+            hovertemplate="%{customdata[0]}: %{x:+,.0f} (P better %{customdata[1]:.0%})<extra></extra>",
+        ))
+    labels = [s.guardrail_label for s in plans[0].scenarios if s.budget_factor == 1.0]
+    fig = _layout(fig, "Gain vs today by guardrail, same budget (90% interval)", "", 140 + 70 * len(labels))
+    fig.update_layout(hovermode="closest")
+    fig.update_yaxes(autorange="reversed", tickmode="array", tickvals=list(range(len(labels))),
+                     ticktext=[html.escape(x) for x in labels], showgrid=False)
+    fig.add_vline(x=0, line_color=TEXT2, line_width=1)
+    return fig
+
+
+def _budget_html(plans: list) -> str:
+    parts = ["<h2>Budget scenarios</h2>",
+             "<p class='muted'>The same budget optimised under increasingly loose guardrails. Larger moves "
+             "promise more but rely more on the response curves; beyond 1.5× historical spend they extrapolate.</p>"]
+    for pl in plans:
+        rec = pl.recommendations.get("1", {})
+        parts += [f"<h3>{html.escape(pl.framework)} · {html.escape(pl.run_id)}</h3>",
+                  f"<p><b>Recommendation:</b> {html.escape(rec.get('summary', ''))}</p>"]
+        if rec.get("increase") or rec.get("decrease"):
+            parts.append(f"<p>Increase: {html.escape(', '.join(rec.get('increase', [])) or '—')} · "
+                         f"Decrease: {html.escape(', '.join(rec.get('decrease', [])) or '—')}</p>")
+        parts += ["<ul>"] + [f"<li class='muted'>{html.escape(x)}</li>" for x in rec.get("reasons", [])] + ["</ul>"]
+        ss = [s for s in pl.scenarios if s.budget_factor == 1.0]
+        head = "".join(f"<th>{html.escape(s.guardrail_label)}</th>" for s in ss)
+        rows = []
+        for c in pl.channels:
+            cells = "".join(f"<td class='n'>{s.allocation[c]['change_pct']:+.0%}</td>" for s in ss)
+            rows.append(f"<tr><td>{html.escape(c)}</td><td class='n'>{_fmt(ss[0].allocation[c]['current'])}</td>{cells}</tr>")
+        gains = "".join(f"<td class='n'>{s.gain['mean']:+,.0f}<br><span class='muted'>{s.prob_better:.0%} better</span></td>" for s in ss)
+        parts.append(f"<div class='scroll'><table><tr><th>Channel</th><th>Today</th>{head}</tr>{''.join(rows)}"
+                     f"<tr><td><b>Expected gain</b></td><td></td>{gains}</tr></table></div>")
+        if pl.notes:
+            parts += ["<ul>"] + [f"<li class='muted'>{html.escape(n)}</li>" for n in pl.notes] + ["</ul>"]
+    return "".join(parts)
+
+
+def build_html(results: list[ModelResults], comparison: Optional[dict] = None, title: str = "MMM results",
+               budget_plans: Optional[list] = None) -> str:
     from plotly.offline import get_plotlyjs
 
     cfg = {"displaylogo": False, "responsive": True}
@@ -483,6 +538,10 @@ def build_html(results: list[ModelResults], comparison: Optional[dict] = None, t
     for f in figs:
         parts.append(f"<div class='chart'>{f.to_html(full_html=False, include_plotlyjs=False, config=cfg)}</div>")
 
+    if budget_plans:
+        parts.append(_budget_html(budget_plans))
+        parts.append(f"<div class='chart'>{fig_ladder(budget_plans).to_html(full_html=False, include_plotlyjs=False, config=cfg)}</div>")
+
     parts.append("<h2>Channel tables</h2>")
     for r in results:
         parts += [f"<h3>{html.escape(_label(r))}</h3>", _channel_table(r)]
@@ -508,7 +567,7 @@ def _miv(s: Optional[dict], kind: str = "num") -> str:
 
 
 def build_markdown(results: list[ModelResults], figures: dict[str, list[str]],
-                   comparison: Optional[dict] = None) -> str:
+                   comparison: Optional[dict] = None, budget_plans: Optional[list] = None) -> str:
     w = results[0].window
     lines = ["# MMM results summary", "",
              f"Target **{results[0].target_label}** · training {w.get('train_start')} → {w.get('train_end')}"
@@ -531,6 +590,13 @@ def build_markdown(results: list[ModelResults], figures: dict[str, list[str]],
         lines += [""] + [f"![{Path(p).stem}]({p})" for p in figures.get(r.run_id, [])] + [""]
     if figures.get("comparison"):
         lines += ["## Comparison charts", ""] + [f"![{Path(p).stem}]({p})" for p in figures["comparison"]] + [""]
+    if budget_plans:
+        lines += ["## Budget scenarios", ""]
+        for pl in budget_plans:
+            rec = pl.recommendations.get("1", {})
+            lines.append(f"- **{pl.framework}:** {rec.get('summary', '')} Full ladder: "
+                         f"`mmm-workspace/budget/{pl.run_id}/budget_report.md`.")
+        lines.append("")
     lines += ["Intervals are 90% posterior intervals; contribution and ROAS cover the training window.", ""]
     return "\n".join(lines)
 
@@ -539,7 +605,7 @@ def build_markdown(results: list[ModelResults], figures: dict[str, list[str]],
 # Entry point
 # --------------------------------------------------------------------------- #
 def build_report(results: list[ModelResults], comparison: Optional[dict] = None, base: str | Path = ".",
-                 title: str = "MMM results") -> dict[str, Any]:
+                 title: str = "MMM results", budget_plans: Optional[list] = None) -> dict[str, Any]:
     if not results:
         raise ValueError("no results to report")
     out = Path(base) / "mmm-workspace" / "reports"
@@ -561,8 +627,8 @@ def build_report(results: list[ModelResults], comparison: Optional[dict] = None,
                  png_compare_metric(results, "share", d / "share_compare.png", "Share of outcome by channel, 90% interval")]
         figures["comparison"] = [str(p.relative_to(out)) for p in paths]
     html_path = out / "mmm_report.html"
-    html_path.write_text(build_html(results, comparison, title), encoding="utf-8")
+    html_path.write_text(build_html(results, comparison, title, budget_plans), encoding="utf-8")
     md_path = out / "summary.md"
-    md_path.write_text(build_markdown(results, figures, comparison), encoding="utf-8")
+    md_path.write_text(build_markdown(results, figures, comparison, budget_plans), encoding="utf-8")
     return {"html": str(html_path), "markdown": str(md_path),
             "figures": {k: [str(out / p) for p in v] for k, v in figures.items()}}

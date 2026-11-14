@@ -94,7 +94,7 @@ STAGES: tuple[Stage, ...] = (
     Stage(9, "Diagnose", "/mmm-diagnose", ("runs/*/diagnostics_report.md",)),
     Stage(10, "Validate and compare", "/mmm-compare", ("comparison/comparison.md",)),
     Stage(11, "Improve", "/mmm-improve", ("leaderboard.json",)),
-    Stage(12, "Interpret", "(conversation)", ()),
+    Stage(12, "Interpret and budget scenarios", "/mmm-budget", ("budget/*/scenarios.json",)),
     Stage(13, "Experiment roadmap", "/mmm-experiment-plan", ("experiments/roadmap.md",)),
     Stage(14, "Deliver", "/mmm-report, /mmm-present", ("reports/*.md", "reports/mmm_report.html")),
 )
@@ -107,6 +107,7 @@ DEPENDENCIES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("runs/*/metrics.json", ("priors/model_config.json", "spec.yaml")),
     ("reports/*.md", ("runs/*/metrics.json",)),
     ("comparison/comparison.json", ("runs/*/results.json",)),
+    ("budget/*/scenarios.json", ("runs/*/results.json",)),
 )
 
 

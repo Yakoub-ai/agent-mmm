@@ -95,7 +95,10 @@ Generate reports for one or all stakeholder personas.
    if not results:
        print("No results.json found. Run /mmm-fit first."); raise SystemExit(1)
    comp = compare(results) if len(results) > 1 else None
-   out = build_report(results, comp, base=".")
+   from agent_mmm.budget import load_plans
+   run_ids = {r.run_id for r in results}
+   plans = [p for p in load_plans(".") if p.run_id in run_ids] or None   # from /mmm-budget, if run
+   out = build_report(results, comp, base=".", budget_plans=plans)
    print(f"HTML report: {out['html']}")
    print(f"Summary:     {out['markdown']}")
    for group, paths in out["figures"].items():
